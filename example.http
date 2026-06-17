@@ -1,0 +1,62 @@
+@baseUrl = http://localhost:8000/api
+
+###请求列表
+
+### 获取 Skills 列表（默认分页）
+GET {{baseUrl}}/skills
+Accept: application/json
+
+### 获取 Skills 列表（带搜索关键词）
+GET {{baseUrl}}/skills?search=abc
+Accept: application/json
+
+### 获取 Skills 列表（自定义分页）
+GET {{baseUrl}}/skills?page=1&page_size=5
+Accept: application/json
+
+### 获取 Skills 列表（搜索 + 分页）
+GET {{baseUrl}}/skills?search=工具&page=1&page_size=10
+Accept: application/json
+
+### 获取单个 Skill 详情（替换 {{skillId}} 为实际 ID）
+GET {{baseUrl}}/skills/1
+Accept: application/json
+
+### 创建 Skill（上传 zip 文件 + 表单字段）
+POST {{baseUrl}}/skills
+Content-Type: multipart/form-data; boundary=----FormBoundary
+
+------FormBoundary
+Content-Disposition: form-data; name="name"
+
+My Skill
+------FormBoundary
+Content-Disposition: form-data; name="description"
+
+这是一个示例 Skill 描述
+------FormBoundary
+Content-Disposition: form-data; name="author"
+
+zhangsan
+------FormBoundary
+Content-Disposition: form-data; name="version"
+
+1.0.0
+------FormBoundary
+Content-Disposition: form-data; name="tags"
+
+python,tool,automation
+------FormBoundary
+Content-Disposition: form-data; name="file"; filename="example.zip"
+Content-Type: application/zip
+
+< ./test_upload.zip
+------FormBoundary--
+
+### 下载 Skill 文件（替换 ID 为实际值）
+GET {{baseUrl}}/skills/1/download
+Accept: application/zip
+
+### 删除 Skill（替换 ID 为实际值）
+DELETE {{baseUrl}}/skills/1
+Accept: application/json

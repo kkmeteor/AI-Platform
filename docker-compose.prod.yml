@@ -1,0 +1,62 @@
+# ============================================
+# DCloud Market - Docker Compose（离线部署版）
+# 适用于测试机：使用预构建镜像，无需源码
+# ============================================
+# 使用方式：
+#   加载镜像后启动：docker-compose -f docker-compose.prod.yml up -d
+#   停止服务：     docker-compose -f docker-compose.prod.yml down
+#   查看日志：     docker-compose -f docker-compose.prod.yml logs -f
+# ============================================
+
+version: "3.8"
+
+services:
+  # ------------------------------------------
+  # 后端服务 - FastAPI (Python)
+  # ------------------------------------------
+  backend:
+    image: dcloud-market-backend:latest
+    container_name: dcloud-market-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # 数据持久化到宿主机 C:\Data 目录
+      # DB 文件直接放在 C:\Data 根目录
+      - C:/Data/skills.db:/app/data/skills.db
+      # 上传文件存放在 C:\Data\uploads 目录
+      - C:/Data/uploads:/app/uploads
+    environment:
+      - DATABASE_URL=sqlite:///./data/skills.db
+    networks:
+      - dcloud-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ------------------------------------------
+  # 前端服务 - Nginx (React SPA)
+  # ------------------------------------------
+  frontend:
+    image: dcloud-market-frontend:latest
+    container_name: dcloud-market-frontend
+    restart: unless-stopped
+    ports:
+      # 宿主机 80/8080 端口被占用，改用 9090
+      - "9090:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - dcloud-network
+
+# ------------------------------------------
+# 网络
+# ------------------------------------------
+networks:
+  dcloud-network:
+    driver: bridge
+    name: dcloud-market-network

@@ -1,0 +1,67 @@
+<div style="padding: 24px 0;">
+  <!-- Header -->
+  <div class="header">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 700;">Skills Market</h1>
+    <div class="header-actions">
+      <nz-input-group
+        nzSearch
+        [nzAddOnAfter]="searchBtn"
+        nzSize="large"
+        style="width: 320px;"
+      >
+        <input
+          #searchInput
+          nz-input
+          type="text"
+          placeholder="搜索 Skills..."
+          [ngModel]="search"
+          (ngModelChange)="onSearchChange($event)"
+          (keydown.enter)="onSearch(searchInput.value)"
+        />
+      </nz-input-group>
+      <ng-template #searchBtn>
+        <button nz-button nzType="primary" nzSize="large" (click)="onSearch(search)">
+          <span nz-icon nzType="search"></span>
+        </button>
+      </ng-template>
+      <button nz-button nzType="primary" nzSize="large" (click)="uploadOpen = true">
+        <span nz-icon nzType="plus"></span>
+        上传
+      </button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <nz-spin [nzSpinning]="loading">
+    @if (skills.length === 0 && !loading) {
+      <nz-empty nzDescription="暂无 Skills" style="margin-top: 80px;"></nz-empty>
+    } @else {
+      <div nz-row [nzGutter]="[16, 16]">
+        @for (skill of skills; track skill.id) {
+          <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8" [nzLg]="6">
+            <app-skill-card [skill]="skill" (refresh)="onRefresh()"></app-skill-card>
+          </div>
+        }
+      </div>
+    }
+  </nz-spin>
+
+  <!-- Pagination -->
+  @if (total > pageSize) {
+    <div style="text-align: center; margin-top: 32px;">
+      <nz-pagination
+        [nzPageIndex]="page"
+        [nzTotal]="total"
+        [nzPageSize]="pageSize"
+        (nzPageIndexChange)="onPageChange($event)"
+        [nzShowSizeChanger]="false"
+      ></nz-pagination>
+    </div>
+  }
+
+  <!-- Upload Modal -->
+  <app-upload-modal
+    [(visible)]="uploadOpen"
+    (uploadSuccess)="onUploadSuccess()"
+  ></app-upload-modal>
+</div>

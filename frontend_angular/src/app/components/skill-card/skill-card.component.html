@@ -1,0 +1,66 @@
+<nz-card
+  nzHoverable
+  style="height: 100%; display: flex; flex-direction: column;"
+  [nzBodyStyle]="{ flex: 1, display: 'flex', flexDirection: 'column' }"
+>
+  <div style="flex: 1;">
+    <h5 nz-typography style="margin-top: 0; margin-bottom: 8px;">{{ skill.name }}</h5>
+
+    <p
+      nz-typography
+      nzType="secondary"
+      nz-ellipsis
+      [nzEllipsisRows]="2"
+      style="margin-bottom: 12px; min-height: 44px;"
+    >
+      {{ skill.description }}
+    </p>
+
+    @if (skill.tags && skill.tags.length > 0) {
+      <div style="margin-bottom: 12px;">
+        @for (tag of skill.tags; track tag) {
+          <nz-tag nzColor="blue">{{ tag }}</nz-tag>
+        }
+      </div>
+    }
+
+    <div class="info-list">
+      <span nz-typography nzType="secondary">
+        <span nz-icon nzType="user"></span> {{ skill.author || 'Unknown' }}
+      </span>
+      <span nz-typography nzType="secondary">
+        <span nz-icon nzType="clock-circle"></span> {{ skill.upload_time | date:'yyyy-MM-dd HH:mm' }}
+      </span>
+      <span nz-typography nzType="secondary">
+        <span nz-icon nzType="cloud-download"></span> {{ skill.download_count }} 次下载
+      </span>
+    </div>
+  </div>
+
+  <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+    <nz-tag nzColor="green">v{{ skill.version }}</nz-tag>
+    <div style="display: flex; gap: 8px;">
+      <button
+        nz-button
+        nzType="primary"
+        nzSize="small"
+        (click)="handleDownload()"
+      >
+        <span nz-icon nzType="download"></span>
+        下载
+      </button>
+      <button
+        nz-button
+        nzDanger
+        nzSize="small"
+        nz-popconfirm
+        nzPopconfirmTitle="确定删除此 Skill？"
+        nzOkText="确定"
+        nzCancelText="取消"
+        (nzOnConfirm)="handleDelete()"
+      >
+        <span nz-icon nzType="delete"></span>
+      </button>
+    </div>
+  </div>
+</nz-card>
