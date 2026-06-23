@@ -1,12 +1,12 @@
 @echo off
 chcp 65001 >nul
 REM ============================================
-REM DCloud Market - 停止服务脚本
+REM DCloud Market - Stop Services Script
 REM ============================================
 
 echo.
 echo ============================================
-echo   DCloud Market - 停止所有服务
+echo   DCloud Market - Stop All Services
 echo ============================================
 echo.
 
@@ -15,6 +15,6 @@ cd /d "%~dp0"
 docker-compose down
 
 echo.
-echo [信息] 所有服务已停止。
+echo [INFO] All services stopped.
 echo.
 pause

@@ -23,6 +23,8 @@ class SkillResponse(BaseModel):
     file_path: str
     file_size: Optional[int] = None
     download_count: int = 0
+    is_readonly: bool = False
+    is_pinned: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -39,6 +41,10 @@ class SkillResponse(BaseModel):
         if isinstance(v, str):
             return [tag.strip() for tag in v.split(",") if tag.strip()]
         return []
+
+
+class SkillUpdate(BaseModel):
+    is_pinned: Optional[bool] = None
 
 
 class SkillListResponse(BaseModel):

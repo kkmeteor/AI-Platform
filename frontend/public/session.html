@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会话 - Agent Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            background: #f0f2f5;
+        }
+        /* 左侧侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: #1a1d23;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .system-name {
+            padding: 20px 24px;
+            font-size: 20px;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: #667eea;
+            cursor: pointer;
+        }
+        .nav-group {
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .nav-group:last-child {
+            border-bottom: none;
+        }
+        .group-title {
+            padding: 8px 24px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            font-weight: 600;
+        }
+        .nav-item {
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .nav-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            border-left-color: #667eea;
+            color: #667eea;
+        }
+        .nav-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+        .nav-text {
+            font-size: 14px;
+        }
+        /* 中部聊天区域 */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+        }
+        .chat-header {
+            padding: 16px 24px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .agent-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .agent-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+        .agent-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1d23;
+        }
+        .agent-status {
+            font-size: 12px;
+            color: #666;
+        }
+        .chat-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #333;
+            cursor: pointer;
+        }
+        .action-btn:hover {
+            background: #eee;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 80%;
+        }
+        .message.user {
+            flex-direction: row-reverse;
+            align-self: flex-end;
+        }
+        .message.bot {
+            align-self: flex-start;
+        }
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .message.bot .msg-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .message.user .msg-avatar {
+            background: #ffd93d;
+            color: #333;
+        }
+        .msg-content {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .message.bot .msg-content {
+            background: #f5f5f5;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        .message.user .msg-content {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .msg-time {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .message.user .msg-time {
+            text-align: right;
+        }
+        .chat-input-area {
+            padding: 16px 24px;
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
+        }
+        .input-box {
+            display: flex;
+            align-items: center;
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+        .input-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            color: #333;
+        }
+        .input-box input::placeholder {
+            color: #888;
+        }
+        .input-icon {
+            font-size: 18px;
+            color: #888;
+            cursor: pointer;
+        }
+        .input-icon:hover {
+            color: #667eea;
+        }
+        .send-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            margin-left: 12px;
+        }
+        .send-btn:hover {
+            opacity: 0.9;
+        }
+        /* 右侧会话历史区域 */
+        .history-panel {
+            width: 320px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+        .history-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .history-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1d23;
+        }
+        .history-tabs {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .tab:hover:not(.active) {
+            background: #eee;
+        }
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .history-item {
+            padding: 12px 16px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .history-item:hover {
+            background: #e8eaf6;
+        }
+        .history-item.active {
+            background: #e8eaf6;
+            border: 1px solid #667eea;
+        }
+        .history-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .history-agent {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+        }
+        .history-time {
+            font-size: 11px;
+            color: #888;
+        }
+        .history-preview {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .history-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .meta-tag {
+            padding: 4px 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #666;
+        }
+        .meta-tag.online {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+        .meta-tag.test {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <!-- 左侧侧边栏 -->
+    <aside class="sidebar">
+        <div class="system-name" onclick="goHome()">SinoUnion AI Agent Studio</div>
+        
+        <div class="nav-group">
+            <div class="group-title">Agent Studio</div>
+            <div class="nav-item" onclick="goHome()">
+                <span class="nav-icon">🤖</span>
+                <span class="nav-text">Agents</span>
+            </div>
+            <div class="nav-item" onclick="goHome()">
+                <span class="nav-icon">⚡</span>
+                <span class="nav-text">Skills</span>
+            </div>
+            <div class="nav-item" onclick="goHome()">
+                <span class="nav-icon">🔧</span>
+                <span class="nav-text">Tools</span>
+            </div>
+            <div class="nav-item" onclick="goHome()">
+                <span class="nav-icon">🔗</span>
+                <span class="nav-text">MCPs</span>
+            </div>
+            <div class="nav-item" onclick="goHome()">
+                <span class="nav-icon">📚</span>
+                <span class="nav-text">RAGs</span>
+            </div>
+            <div class="nav-item" onclick="goHome()">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">统计</span>
+            </div>
+        </div>
+        
+        <div class="nav-group">
+            <div class="group-title">Agent Control</div>
+            <div class="nav-item active">
+                <span class="nav-icon">💬</span>
+                <span class="nav-text">会话</span>
+            </div>
+            <div class="nav-item" onclick="goHome()">
+                <span class="nav-icon">📡</span>
+                <span class="nav-text">通道</span>
+            </div>
+            <div class="nav-item" onclick="goHome()">
+                <span class="nav-icon">🧠</span>
+                <span class="nav-text">记忆</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 中部聊天区域 -->
+    <div class="chat-area">
+        <div class="chat-header">
+            <div class="agent-info">
+                <div class="agent-avatar">🤖</div>
+                <div>
+                    <div class="agent-name" id="currentAgent">Agent 1</div>
+                    <div class="agent-status">数据分析代理 · 运行中</div>
+                </div>
+            </div>
+            <div class="chat-actions">
+                <button class="action-btn">清空对话</button>
+                <button class="action-btn">导出记录</button>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will be rendered here -->
+        </div>
+        
+        <div class="chat-input-area">
+            <div class="input-box">
+                <span class="input-icon">📎</span>
+                <input type="text" placeholder="输入消息，Agent 1 将为您进行数据分析..." id="messageInput">
+                <span class="input-icon">🎤</span>
+            </div>
+            <button class="send-btn" onclick="sendMessage()">发送</button>
+        </div>
+    </div>
+
+    <!-- 右侧会话历史 -->
+    <div class="history-panel">
+        <div class="history-header">
+            <div class="history-title">会话历史</div>
+            <div class="history-tabs">
+                <div class="tab active" onclick="switchTab('online')">线上</div>
+                <div class="tab" onclick="switchTab('test')">测试</div>
+                <div class="tab" onclick="switchTab('all')">全部</div>
+            </div>
+        </div>
+        <div class="history-list" id="historyList">
+            <!-- History items will be rendered here -->
+        </div>
+    </div>
+
+    <script>
+        // 会话历史数据
+        const historyData = {
+            online: [
+                {
+                    id: 1,
+                    agent: 'Agent 1',
+                    preview: '用户销售数据分析报告生成',
+                    time: '10:30',
+                    tag: 'online',
+                    messages: [
+                        { role: 'user', content: '帮我分析一下上个月的销售数据', time: '10:30' },
+                        { role: 'bot', content: '好的，我来帮您分析上个月的销售数据。请提供数据文件或告诉我数据来源。', time: '10:31' },
+                        { role: 'user', content: '数据在sales_2024.xlsx文件中', time: '10:32' },
+                        { role: 'bot', content: '已读取销售数据文件。分析结果如下：\n\n1. 总销售额：¥1,234,567\n2. 订单数量：892笔\n3. 平均客单价：¥1,382\n4. 热销产品TOP3：产品A、产品B、产品C\n\n详细报告已生成，是否需要导出？', time: '10:35' }
+                    ]
+                },
+                {
+                    id: 2,
+                    agent: 'Agent 1',
+                    preview: '用户行为数据可视化分析',
+                    time: '09:15',
+                    tag: 'online',
+                    messages: [
+                        { role: 'user', content: '生成用户行为数据可视化图表', time: '09:15' },
+                        { role: 'bot', content: '好的，我来生成用户行为数据的可视化图表。请问您需要哪些维度的分析？', time: '09:16' },
+                        { role: 'user', content: '用户访问路径和转化率', time: '09:17' },
+                        { role: 'bot', content: '已生成用户访问路径桑基图和转化率漏斗图。\n\n关键发现：\n- 首页→产品页转化率：45%\n- 产品页→下单转化率：12%\n- 整体转化率：5.4%', time: '09:20' }
+                    ]
+                }
+            ],
+            test: [
+                {
+                    id: 3,
+                    agent: 'Agent 2',
+                    preview: '客服对话测试场景',
+                    time: '昨天',
+                    tag: 'test',
+                    messages: [
+                        { role: 'user', content: '测试客服回复功能', time: '14:00' },
+                        { role: 'bot', content: '客服测试模式已启动。请输入模拟用户问题。', time: '14:01' },
+                        { role: 'user', content: '我的订单为什么还没发货？', time: '14:02' },
+                        { role: 'bot', content: '您好，我来帮您查询订单状态。请提供您的订单号。\n\n常见发货延迟原因：\n1. 商品库存不足\n2. 物流高峰期\n3. 地址信息需要确认', time: '14:03' }
+                    ]
+                },
+                {
+                    id: 4,
+                    agent: 'Agent 3',
+                    preview: '数据报告生成测试',
+                    time: '昨天',
+                    tag: 'test',
+                    messages: [
+                        { role: 'user', content: '测试报告生成功能', time: '16:00' },
+                        { role: 'bot', content: '报告生成测试已启动。请指定报告类型和参数。', time: '16:01' },
+                        { role: 'user', content: '生成周报，包含销售和库存数据', time: '16:02' },
+                        { role: 'bot', content: '测试报告已生成：\n\n📊 本周销售周报\n- 销售总额：测试数据 ¥856,000\n- 新增订单：测试数据 156笔\n- 库存周转率：测试数据 2.3次\n\n报告格式：PDF/Excel可选', time: '16:05' }
+                    ]
+                }
+            ],
+            all: [
+                {
+                    id: 1,
+                    agent: 'Agent 1',
+                    preview: '用户销售数据分析报告生成',
+                    time: '10:30',
+                    tag: 'online',
+                    messages: [
+                        { role: 'user', content: '帮我分析一下上个月的销售数据', time: '10:30' },
+                        { role: 'bot', content: '好的，我来帮您分析上个月的销售数据。请提供数据文件或告诉我数据来源。', time: '10:31' },
+                        { role: 'user', content: '数据在sales_2024.xlsx文件中', time: '10:32' },
+                        { role: 'bot', content: '已读取销售数据文件。分析结果如下：\n\n1. 总销售额：¥1,234,567\n2. 订单数量：892笔\n3. 平均客单价：¥1,382\n4. 热销产品TOP3：产品A、产品B、产品C\n\n详细报告已生成，是否需要导出？', time: '10:35' }
+                    ]
+                },
+                {
+                    id: 2,
+                    agent: 'Agent 1',
+                    preview: '用户行为数据可视化分析',
+                    time: '09:15',
+                    tag: 'online',
+                    messages: [
+                        { role: 'user', content: '生成用户行为数据可视化图表', time: '09:15' },
+                        { role: 'bot', content: '好的，我来生成用户行为数据的可视化图表。请问您需要哪些维度的分析？', time: '09:16' },
+                        { role: 'user', content: '用户访问路径和转化率', time: '09:17' },
+                        { role: 'bot', content: '已生成用户访问路径桑基图和转化率漏斗图。\n\n关键发现：\n- 首页→产品页转化率：45%\n- 产品页→下单转化率：12%\n- 整体转化率：5.4%', time: '09:20' }
+                    ]
+                },
+                {
+                    id: 3,
+                    agent: 'Agent 2',
+                    preview: '客服对话测试场景',
+                    time: '昨天',
+                    tag: 'test',
+                    messages: [
+                        { role: 'user', content: '测试客服回复功能', time: '14:00' },
+                        { role: 'bot', content: '客服测试模式已启动。请输入模拟用户问题。', time: '14:01' },
+                        { role: 'user', content: '我的订单为什么还没发货？', time: '14:02' },
+                        { role: 'bot', content: '您好，我来帮您查询订单状态。请提供您的订单号。\n\n常见发货延迟原因：\n1. 商品库存不足\n2. 物流高峰期\n3. 地址信息需要确认', time: '14:03' }
+                    ]
+                },
+                {
+                    id: 4,
+                    agent: 'Agent 3',
+                    preview: '数据报告生成测试',
+                    time: '昨天',
+                    tag: 'test',
+                    messages: [
+                        { role: 'user', content: '测试报告生成功能', time: '16:00' },
+                        { role: 'bot', content: '报告生成测试已启动。请指定报告类型和参数。', time: '16:01' },
+                        { role: 'user', content: '生成周报，包含销售和库存数据', time: '16:02' },
+                        { role: 'bot', content: '测试报告已生成：\n\n📊 本周销售周报\n- 销售总额：测试数据 ¥856,000\n- 新增订单：测试数据 156笔\n- 库存周转率：测试数据 2.3次\n\n报告格式：PDF/Excel可选', time: '16:05' }
+                    ]
+                }
+            ]
+        };
+
+        let currentTab = 'online';
+        let currentSession = historyData.online[0];
+
+        function renderHistoryList(tab) {
+            const list = document.getElementById('historyList');
+            const data = historyData[tab];
+            
+            list.innerHTML = data.map(item => `
+                <div class="history-item ${item.id === currentSession.id ? 'active' : ''}" onclick="selectSession(${item.id}, '${tab}')">
+                    <div class="history-item-header">
+                        <span class="history-agent">${item.agent}</span>
+                        <span class="history-time">${item.time}</span>
+                    </div>
+                    <div class="history-preview">${item.preview}</div>
+                    <div class="history-meta">
+                        <span class="meta-tag ${item.tag}">${item.tag === 'online' ? '线上' : '测试'}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('chatMessages');
+            
+            container.innerHTML = messages.map(msg => `
+                <div class="message ${msg.role}">
+                    <div class="msg-avatar">${msg.role === 'bot' ? '🤖' : '👤'}</div>
+                    <div>
+                        <div class="msg-content">${msg.content}</div>
+                        <div class="msg-time">${msg.time}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            // 滚动到底部
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab:nth-child(${tab === 'online' ? 1 : tab === 'test' ? 2 : 3})`).classList.add('active');
+            renderHistoryList(tab);
+        }
+
+        function selectSession(id, tab) {
+            const data = historyData[tab];
+            currentSession = data.find(item => item.id === id);
+            
+            // 更新Agent名称
+            document.getElementById('currentAgent').textContent = currentSession.agent;
+            
+            // 更新历史列表选中状态
+            renderHistoryList(tab);
+            
+            // 更新聊天消息
+            renderMessages(currentSession.messages);
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const content = input.value.trim();
+            
+            if (content) {
+                const newMsg = {
+                    role: 'user',
+                    content: content,
+                    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+                };
+                
+                currentSession.messages.push(newMsg);
+                renderMessages(currentSession.messages);
+                input.value = '';
+                
+                // 模拟Agent回复
+                setTimeout(() => {
+                    const botReply = {
+                        role: 'bot',
+                        content: '收到您的请求，正在处理数据分析任务...\n\n请稍候，我将为您生成分析结果。',
+                        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+                    };
+                    currentSession.messages.push(botReply);
+                    renderMessages(currentSession.messages);
+                }, 1000);
+            }
+        }
+
+        function goHome() {
+            window.location.href = '/';
+        }
+
+        // 初始化
+        renderHistoryList('online');
+        renderMessages(currentSession.messages);
+
+        // 回车发送
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

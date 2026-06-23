@@ -11,12 +11,19 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Skill
-from app.schemas import SkillCreate, SkillResponse, SkillListResponse
+from app.schemas import SkillCreate, SkillResponse, SkillListResponse, SkillUpdate
 
 router = APIRouter()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+
+
+def require_admin(request: Request):
+    """Check X-User-Role header, raise 403 if not admin."""
+    role = request.headers.get("X-User-Role", "").strip().lower()
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Admin permission required")
 
 
 @router.get("/skills", response_model=SkillListResponse)
@@ -37,7 +44,12 @@ def list_skills(
         )
 
     total = query.count()
-    items = query.order_by(Skill.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    items = (
+        query.order_by(Skill.is_pinned.desc(), Skill.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     return SkillListResponse(items=items, total=total)
 
@@ -120,11 +132,38 @@ def download_skill(skill_id: int, db: Session = Depends(get_db)):
     )
 
 
-@router.delete("/skills/{skill_id}")
-def delete_skill(skill_id: int, db: Session = Depends(get_db)):
+@router.patch("/skills/{skill_id}/pin", response_model=SkillResponse)
+def toggle_pin_skill(
+    skill_id: int,
+    request: Request,
+    payload: SkillUpdate,
+    db: Session = Depends(get_db),
+):
+    require_admin(request)
     skill = db.query(Skill).filter(Skill.id == skill_id).first()
     if not skill:
         raise HTTPException(status_code=404, detail="Skill not found")
+
+    if payload.is_pinned is not None:
+        skill.is_pinned = payload.is_pinned
+    db.commit()
+    db.refresh(skill)
+    return skill
+
+
+@router.delete("/skills/{skill_id}")
+def delete_skill(
+    skill_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    require_admin(request)
+    skill = db.query(Skill).filter(Skill.id == skill_id).first()
+    if not skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+
+    if skill.is_readonly:
+        raise HTTPException(status_code=403, detail="Cannot delete a readonly skill")
 
     # 删除文件
     file_path = os.path.join(UPLOAD_DIR, skill.file_path)

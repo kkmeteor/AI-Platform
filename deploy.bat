@@ -1,95 +1,95 @@
 @echo off
 chcp 65001 >nul
 REM ============================================
-REM DCloud Market - 一键部署脚本
-REM 功能：使用 docker-compose 启动所有服务
+REM DCloud Market - Deploy Script
+REM Purpose: Start all services using docker-compose
 REM ============================================
 
 setlocal enabledelayedexpansion
 
 echo.
 echo ============================================
-echo   DCloud Market - 一键部署
+echo   DCloud Market - One-Click Deploy
 echo ============================================
 echo.
 
-REM 检查 Docker 是否运行
+REM Check if Docker is running
 docker info >nul 2>&1
 if errorlevel 1 (
-    echo [错误] Docker 未运行，请先启动 Docker Desktop。
+    echo [ERROR] Docker is not running. Please start Docker Desktop first.
     pause
     exit /b 1
 )
 
-REM 切换到项目根目录
+REM Switch to project root directory
 cd /d "%~dp0"
 
-REM 初始化数据目录（首次部署时自动创建并迁移已有数据）
-echo [信息] 检查数据目录 C:\Data ...
+REM Initialize data directory (create and migrate data on first deployment)
+echo [INFO] Checking data directory C:\Data ...
 if not exist "C:\Data" (
-    echo [信息] 首次部署，创建 C:\Data 目录...
+    echo [INFO] First deployment, creating C:\Data directory...
     mkdir "C:\Data"
 )
 if not exist "C:\Data\uploads" (
-    echo [信息] 创建 C:\Data\uploads 目录...
+    echo [INFO] Creating C:\Data\uploads directory...
     mkdir "C:\Data\uploads"
 )
-REM 如果宿主机没有 skills.db，创建空文件以便 Docker 挂载为文件而非目录
+REM Create empty skills.db if not present, so Docker mounts it as a file not a directory
 if not exist "C:\Data\skills.db" (
-    echo [信息] 初始化空的 skills.db 文件...
+    echo [INFO] Initializing empty skills.db file...
     type nul > "C:\Data\skills.db"
 )
-REM 首次部署时，将项目内的 uploads 文件复制到 C:\Data\uploads
+REM On first deployment, copy existing upload files from backend to C:\Data\uploads
 if exist "backend\uploads" (
     dir /b "backend\uploads\*.zip" >nul 2>&1
     if not errorlevel 1 (
         if not exist "C:\Data\uploads\*.zip" (
-            echo [信息] 首次部署，复制已有上传文件到 C:\Data\uploads ...
+            echo [INFO] First deployment, copying existing upload files to C:\Data\uploads ...
             xcopy /y /q "backend\uploads\*.zip" "C:\Data\uploads\" >nul
         )
     )
 )
-echo [成功] 数据目录就绪。
+echo [OK] Data directory ready.
 echo.
 
-echo [信息] 检查现有容器...
+echo [INFO] Checking existing containers...
 docker-compose ps
 echo.
 
-echo [信息] 停止旧容器（如有）...
+echo [INFO] Stopping old containers (if any)...
 docker-compose down
 echo.
 
-echo [信息] 构建并启动所有服务...
+echo [INFO] Building and starting all services...
 docker-compose up -d --build
 if errorlevel 1 (
-    echo [错误] 服务启动失败！
-    echo 请运行以下命令查看详细日志：
+    echo [ERROR] Service startup failed!
+    echo Run the following command to view detailed logs:
     echo   docker-compose logs
     pause
     exit /b 1
 )
 
 echo.
-echo [信息] 等待服务就绪...
+echo [INFO] Waiting for services to be ready...
 timeout /t 5 /nobreak >nul
 
 echo.
 echo ============================================
-echo   部署完成！
+echo   Deployment completed!
 echo ============================================
 echo.
-echo 服务状态：
+echo Service status:
 docker-compose ps
 echo.
-echo 访问地址：
-echo   前端页面：http://localhost:9090
-echo   后端 API：http://localhost:8000
-echo   API 文档：http://localhost:8000/docs
+echo Access URLs:
+echo   Frontend:  http://localhost:9090
+echo   Backend API: http://localhost:8000
+echo   API Docs:    http://localhost:8000/docs
 echo.
-echo 常用命令：
-echo   查看日志：docker-compose logs -f
-echo   停止服务：docker-compose down
-echo   重启服务：docker-compose restart
+echo Common commands:
+echo   View logs:    docker-compose logs -f
+echo   Stop services: docker-compose down
+echo   Restart:       docker-compose restart
 echo.
 pause

@@ -5,6 +5,13 @@ const api = axios.create({
   timeout: 30000,
 });
 
+// Automatically attach X-User-Role header from localStorage
+api.interceptors.request.use((config) => {
+  const role = localStorage.getItem('role') || 'user';
+  config.headers['X-User-Role'] = role;
+  return config;
+});
+
 export interface Skill {
   id: number;
   name: string;
@@ -15,6 +22,8 @@ export interface Skill {
   created_at: string;
   download_count: number;
   file_path: string;
+  is_readonly: boolean;
+  is_pinned: boolean;
 }
 
 export interface SkillListResponse {
@@ -56,4 +65,13 @@ export function getDownloadUrl(id: number): string {
 
 export async function deleteSkill(id: number): Promise<void> {
   await api.delete(`/skills/${id}`);
+}
+
+export async function togglePinSkill(id: number, isPinned: boolean): Promise<Skill> {
+  const res = await api.patch<Skill>(`/skills/${id}/pin`, { is_pinned: isPinned });
+  return res.data;
+}
+
+export function isAdmin(): boolean {
+  return localStorage.getItem('role') === 'admin';
 }

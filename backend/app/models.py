@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP
+from sqlalchemy import Column, Integer, String, Text, Boolean, TIMESTAMP
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -16,5 +16,7 @@ class Skill(Base):
     file_path = Column(String(500), nullable=False)
     file_size = Column(Integer, nullable=True)
     download_count = Column(Integer, default=0)
+    is_readonly = Column(Boolean, default=False, nullable=False)
+    is_pinned = Column(Boolean, default=False, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
     updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))

@@ -1,14 +1,16 @@
-import { Card, Tag, Button, Popconfirm, message, Typography, Space } from 'antd';
+import { Card, Tag, Button, Popconfirm, message, Typography, Space, Tooltip } from 'antd';
 import {
   DownloadOutlined,
   DeleteOutlined,
   UserOutlined,
   ClockCircleOutlined,
   CloudDownloadOutlined,
+  PushpinOutlined,
+  PushpinFilled,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Skill } from '../services/api';
-import { getDownloadUrl, deleteSkill } from '../services/api';
+import { getDownloadUrl, deleteSkill, togglePinSkill, isAdmin } from '../services/api';
 
 const { Text, Paragraph } = Typography;
 
@@ -19,6 +21,8 @@ interface SkillCardProps {
 }
 
 export default function SkillCard({ skill, onRefresh, onClick }: SkillCardProps) {
+  const admin = isAdmin();
+
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     message.info({
@@ -39,15 +43,45 @@ export default function SkillCard({ skill, onRefresh, onClick }: SkillCardProps)
     }
   };
 
+  const handleTogglePin = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await togglePinSkill(skill.id, !skill.is_pinned);
+      message.success(skill.is_pinned ? '已取消置顶' : '已置顶');
+      onRefresh();
+    } catch {
+      message.error('操作失败');
+    }
+  };
+
   return (
     <Card
       hoverable
-      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        border: skill.is_pinned ? '1px solid #1677ff' : undefined,
+      }}
       styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column' } }}
       onClick={() => onClick(skill)}
     >
+      {/* Pin icon - top right, admin only */}
+      {admin && (
+        <Tooltip title={skill.is_pinned ? '取消置顶' : '置顶'}>
+          <Button
+            type="text"
+            size="small"
+            icon={skill.is_pinned ? <PushpinFilled style={{ color: '#1677ff' }} /> : <PushpinOutlined />}
+            onClick={handleTogglePin}
+            style={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
+          />
+        </Tooltip>
+      )}
+
       <div style={{ flex: 1 }}>
-        <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 8 }}>
+        <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 8, paddingRight: admin ? 32 : 0 }}>
           {skill.name}
         </Typography.Title>
 
@@ -93,14 +127,22 @@ export default function SkillCard({ skill, onRefresh, onClick }: SkillCardProps)
           >
             下载
           </Button>
-          <Popconfirm
-            title="确定删除此 Skill？"
-            onConfirm={handleDelete}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Button danger icon={<DeleteOutlined />} size="small" />
-          </Popconfirm>
+          {/* Delete button: admin only, and not readonly */}
+          {admin && !skill.is_readonly && (
+            <Popconfirm
+              title="确定删除此 Skill？"
+              onConfirm={handleDelete}
+              okText="确定"
+              cancelText="取消"
+            >
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </Popconfirm>
+          )}
         </Space>
       </div>
     </Card>

@@ -51,19 +51,18 @@ export default function MarketPlace() {
   };
 
   return (
-    <div style={{ padding: '24px 0' }}>
-      {/* Header */}
+    <div style={{ padding: '0' }}>
+      {/* Header with search and upload */}
       <div
         style={{
           display: 'flex',
-          justifyContent: 'space-between',
+          justifyContent: 'flex-end',
           alignItems: 'center',
           marginBottom: 24,
           flexWrap: 'wrap',
           gap: 16,
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>Skills Market</h1>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <Input.Search
             placeholder="搜索 Skills..."
@@ -125,6 +124,7 @@ export default function MarketPlace() {
         open={!!detailSkill}
         skill={detailSkill}
         onClose={() => setDetailSkill(null)}
+        onRefresh={loadData}
       />
     </div>
   );
