@@ -24,10 +24,9 @@ const sectionData: Record<string, SectionData> = {
     title: 'Agent',
     subtitle: '管理和配置您的智能代理',
     cards: [
-      { icon: '🤖', color: 'blue', title: 'Agent 1', desc: '医疗咨询助手，提供健康建议和症状分析', status: 'active', statusText: '运行中', meta: '创建于 2024-01-15' },
-      { icon: '🤖', color: 'purple', title: 'Agent 2', desc: '客服支持代理，处理用户问题和工单', status: 'active', statusText: '运行中', meta: '创建于 2024-01-20' },
-      { icon: '🤖', color: 'green', title: 'Agent 3', desc: '数据分析代理，生成报告和数据洞察', status: 'inactive', statusText: '已停止', meta: '创建于 2024-02-01' },
-      { icon: '🤖', color: 'orange', title: 'Agent 4', desc: '内容创作助手，辅助写作和编辑', status: 'active', statusText: '运行中', meta: '创建于 2024-02-10' },
+      { icon: '🤖', color: 'blue', title: '赛诺联合通用小助理', desc: '赛诺联合通用AI助手，提供综合智能问答服务', status: 'active', statusText: '运行中', meta: 'Dify Chatbot' },
+      { icon: '🤖', color: 'purple', title: 'TFS代码同步小助理', desc: 'TFS代码同步助手，协助代码同步与版本管理', status: 'active', statusText: '运行中', meta: 'Dify Chatbot' },
+      { icon: '🤖', color: 'green', title: '知识库问答小助理', desc: '知识库查询助手，提供快速问题解答', status: 'active', statusText: '运行中', meta: 'Dify Chatbot' },
     ],
   },
   tool: {
@@ -68,8 +67,9 @@ const sectionData: Record<string, SectionData> = {
     title: '会话',
     subtitle: '管理和查看Agent会话记录',
     cards: [
-      { icon: '💬', color: 'blue', title: '会话 1', desc: '与 Agent 1 的数据分析对话', status: 'active', statusText: '进行中', meta: '10:30 开始', link: '/session.html' },
-      { icon: '💬', color: 'purple', title: '会话 2', desc: '与 Agent 2 的客服测试对话', status: 'inactive', statusText: '已结束', meta: '昨天' },
+      { icon: '💬', color: 'blue', title: '会话 1', desc: '与赛诺联合通用小助理对话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: '/session.html?bot=af3iXcoKxjqyA41D&name=赛诺联合通用小助理' },
+      { icon: '💬', color: 'purple', title: '会话 2', desc: '与TFS代码同步小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: '/session.html?bot=G81boXDVlGHcIn2G&name=TFS代码同步小助理' },
+      { icon: '💬', color: 'orange', title: '会话 3', desc: '与知识库问答小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: '/session.html?bot=tGnNbmEg0ou9ANn0&name=知识库问答小助理' },
     ],
   },
   channel: {
