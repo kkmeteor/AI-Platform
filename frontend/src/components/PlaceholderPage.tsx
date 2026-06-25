@@ -1,5 +1,10 @@
 import './PlaceholderPage.css';
 
+interface KnowledgeLink {
+  label: string;
+  url: string;
+}
+
 interface CardData {
   icon: string;
   color: 'blue' | 'purple' | 'green' | 'orange';
@@ -9,6 +14,8 @@ interface CardData {
   statusText: string;
   meta: string;
   link?: string;
+  externalLink?: string;
+  knowledgeLinks?: KnowledgeLink[];
 }
 
 interface PlaceholderPageProps {
@@ -30,7 +37,13 @@ export default function PlaceholderPage({ title, subtitle, cards }: PlaceholderP
           <div
             key={index}
             className="placeholder-card"
-            onClick={card.link ? () => { window.location.href = card.link!; } : undefined}
+            onClick={
+              card.externalLink
+                ? () => window.open(card.externalLink, '_blank', 'noopener,noreferrer')
+                : card.link
+                  ? () => { window.location.href = card.link!; }
+                  : undefined
+            }
           >
             <div className="card-header">
               <div className={`card-icon ${card.color}`}>{card.icon}</div>
@@ -44,6 +57,22 @@ export default function PlaceholderPage({ title, subtitle, cards }: PlaceholderP
             <div className="card-meta">
               <span>{card.meta}</span>
             </div>
+            {card.knowledgeLinks && card.knowledgeLinks.length > 0 && (
+              <div className="card-knowledge-links">
+                {card.knowledgeLinks.map((kl, i) => (
+                  <a
+                    key={i}
+                    className="knowledge-link-tag"
+                    href={kl.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    📚 {kl.label}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
