@@ -147,3 +147,51 @@
   background: #667eea;
   color: #fff;
 }
+
+.card-config-section,
+.card-tools-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.card-config-section h4,
+.card-tools-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1d23;
+  margin: 0 0 8px 0;
+}
+
+.card-config-section pre {
+  background: #f5f7fa;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #333;
+  overflow-x: auto;
+  margin: 0;
+}
+
+.card-tools-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.card-tools-section li {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.card-tools-section li strong {
+  display: block;
+  color: #1a1d23;
+  margin-bottom: 2px;
+}
+
+.card-tools-section li p {
+  margin: 0;
+  color: #666;
+  line-height: 1.4;
+}

@@ -12,6 +12,11 @@ interface KnowledgeLink {
   url: string;
 }
 
+interface ToolInfo {
+  name: string;
+  description: string;
+}
+
 interface SectionData {
   title: string;
   subtitle: string;
@@ -26,6 +31,8 @@ interface SectionData {
     link?: string;
     externalLink?: string;
     knowledgeLinks?: KnowledgeLink[];
+    tools?: ToolInfo[];
+    config?: Record<string, any>;
   }[];
 }
 
@@ -34,10 +41,10 @@ const sectionData: Record<string, SectionData> = {
     title: 'Agent',
     subtitle: '管理和配置您的智能代理',
     cards: [
-      { icon: '🤖', color: 'blue', title: '赛诺联合通用小助理', desc: '赛诺联合通用AI助手，提供综合智能问答服务', status: 'active', statusText: '运行中', meta: 'Dify Chatbot' },
-      { icon: '🤖', color: 'purple', title: 'TFS代码同步小助理', desc: 'TFS代码同步助手，协助代码同步与版本管理', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: 'TFS产品文档知识库', url: `${DIFY}/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents` }] },
-      { icon: '🤖', color: 'green', title: '知识库问答小助理', desc: '知识库查询助手，提供快速问题解答', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: '会议纪要知识库', url: `${DIFY}/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents` }] },
-      { icon: '🤖', color: 'orange', title: 'TFS迁移GIT小助手', desc: 'TFS迁移GIT助手，协助代码从TFS迁移到GIT', status: 'active', statusText: '运行中', meta: 'Dify Chatbot' },
+      { icon: '🤖', color: 'blue', title: '赛诺联合通用小助理', desc: '赛诺联合通用AI助手，提供综合智能问答服务', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', externalLink: `${DIFY}/app/879ece2d-418d-4742-8389-24535d9546af/configuration` },
+      { icon: '🤖', color: 'purple', title: 'GBSimulator小助手', desc: 'GBSimulator问答小助手，只基于知识库回答', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: 'TFS产品文档知识库', url: `${DIFY}/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents` }], externalLink: `${DIFY}/app/0ff2b915-95a5-4bb2-927d-84244168fe10/workflow` },
+      { icon: '🤖', color: 'green', title: 'AI-STUDIO智能体', desc: '基于本产品开发文档回答，可以联网检索', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: '会议纪要知识库', url: `${DIFY}/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents` }], externalLink: `${DIFY}/app/84e357ca-70be-4ad3-8767-274aab843c4c/workflow` },
+      { icon: '🤖', color: 'orange', title: 'GBSimulator代码同步助手', desc: 'TFS迁移GIT助手，协助代码从TFS迁移到GIT', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', externalLink: `${DIFY}/app/5cb64c42-4964-4867-ab52-f620cc704601/workflow` },
     ],
   },
   tool: {
@@ -53,16 +60,32 @@ const sectionData: Record<string, SectionData> = {
     title: 'MCP',
     subtitle: '模型上下文协议配置',
     cards: [
-      { icon: '🔗', color: 'blue', title: 'MCP Server 1', desc: '数据库连接服务', status: 'active', statusText: '在线', meta: 'PostgreSQL' },
-      { icon: '🔗', color: 'purple', title: 'MCP Server 2', desc: 'API网关服务', status: 'active', statusText: '在线', meta: 'REST API' },
+      { 
+        icon: '🔗', 
+        color: 'blue', 
+        title: 'tfs-tool', 
+        desc: 'TFS 变更集查询与状态对比工具', 
+        status: 'active', 
+        statusText: '在线', 
+        meta: 'HTTP SSE',
+        config: {
+          "url": "http://10.10.11.194:8808/mcp",
+          "type": "http"
+        },
+        tools: [
+          { name: 'check_tfs_health', description: '检查TFS服务健康状态。' },
+          { name: 'query_changeset_history', description: '查询TFS变更集历史。' },
+          { name: 'compare_with_status', description: '比较源项目和目标项目之间的变更集，自动合并本地状态标记，并筛选出**待处理(Pending)**和**需要合并(NeedMerge)**的变更集。' }
+        ]
+      },
     ],
   },
   rag: {
     title: 'RAG',
     subtitle: '检索增强生成配置',
     cards: [
-      { icon: '📚', color: 'blue', title: 'TFS产品文档', desc: 'TFS产品文档', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: `${DIFY}/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents` },
-      { icon: '📚', color: 'purple', title: '会议纪要知识库', desc: '会议纪要知识库', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: `${DIFY}/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents` },
+      { icon: '📚', color: 'blue', title: 'GBSimulator知识库', desc: 'GBSimulator知识库', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: `${DIFY}/datasets/75538eb8-f35b-49a7-ba4a-c4c099c5776d/documents` },
+      { icon: '📚', color: 'purple', title: 'AI-STUDIO知识库', desc: 'AI-STUDIO知识库', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: `${DIFY}/datasets/e7ff5fc1-2d0d-4fdd-8826-a852e8f1e7ad/documents` },
     ],
   },
   stats: {

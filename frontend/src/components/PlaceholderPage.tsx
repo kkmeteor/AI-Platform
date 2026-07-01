@@ -5,6 +5,11 @@ interface KnowledgeLink {
   url: string;
 }
 
+interface ToolInfo {
+  name: string;
+  description: string;
+}
+
 interface CardData {
   icon: string;
   color: 'blue' | 'purple' | 'green' | 'orange';
@@ -16,6 +21,8 @@ interface CardData {
   link?: string;
   externalLink?: string;
   knowledgeLinks?: KnowledgeLink[];
+  tools?: ToolInfo[];
+  config?: Record<string, any>;
 }
 
 interface PlaceholderPageProps {
@@ -71,6 +78,25 @@ export default function PlaceholderPage({ title, subtitle, cards }: PlaceholderP
                     📚 {kl.label}
                   </a>
                 ))}
+              </div>
+            )}
+            {card.config && (
+              <div className="card-config-section" onClick={(e) => e.stopPropagation()}>
+                <h4>MCP 配置</h4>
+                <pre>{JSON.stringify(card.config, null, 2)}</pre>
+              </div>
+            )}
+            {card.tools && card.tools.length > 0 && (
+              <div className="card-tools-section" onClick={(e) => e.stopPropagation()}>
+                <h4>提供的工具</h4>
+                <ul>
+                  {card.tools.map((tool, i) => (
+                    <li key={i}>
+                      <strong>{tool.name}</strong>
+                      <p>{tool.description}</p>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
