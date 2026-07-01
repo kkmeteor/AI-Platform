@@ -47,6 +47,12 @@ services:
     ports:
       # 宿主机 80/8080 端口被占用，改用 9090
       - "9090:80"
+    environment:
+      # Dify 服务地址，修改此处即可切换环境，无需重建镜像
+      - DIFY_URL=http://10.10.9.65:80
+    volumes:
+      # 挂载配置文件，运行时覆盖 config.json，无需重建镜像
+      - ./config/config.json:/usr/share/nginx/html/config.json:ro
     depends_on:
       backend:
         condition: service_healthy

@@ -19,13 +19,13 @@ RUN npm run build
 # ---- 第二阶段：生产镜像 ----
 FROM nginx:alpine
 
-# 删除默认配置
+# Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# 复制自定义 nginx 配置
+# Copy static nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# 从构建阶段复制静态文件
+# Copy static files from build stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80

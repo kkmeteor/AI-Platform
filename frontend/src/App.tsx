@@ -4,6 +4,9 @@ import PlaceholderPage from './components/PlaceholderPage';
 import MarketPlace from './pages/MarketPlace';
 import './App.css';
 
+/** Dify server direct URL (CORS configured on Dify server side) */
+const DIFY = 'http://10.10.9.65';
+
 interface KnowledgeLink {
   label: string;
   url: string;
@@ -32,8 +35,8 @@ const sectionData: Record<string, SectionData> = {
     subtitle: '管理和配置您的智能代理',
     cards: [
       { icon: '🤖', color: 'blue', title: '赛诺联合通用小助理', desc: '赛诺联合通用AI助手，提供综合智能问答服务', status: 'active', statusText: '运行中', meta: 'Dify Chatbot' },
-      { icon: '🤖', color: 'purple', title: 'TFS代码同步小助理', desc: 'TFS代码同步助手，协助代码同步与版本管理', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: 'TFS产品文档知识库', url: 'http://localhost:8080/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents' }] },
-      { icon: '🤖', color: 'green', title: '知识库问答小助理', desc: '知识库查询助手，提供快速问题解答', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: '会议纪要知识库', url: 'http://localhost:8080/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents' }] },
+      { icon: '🤖', color: 'purple', title: 'TFS代码同步小助理', desc: 'TFS代码同步助手，协助代码同步与版本管理', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: 'TFS产品文档知识库', url: `${DIFY}/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents` }] },
+      { icon: '🤖', color: 'green', title: '知识库问答小助理', desc: '知识库查询助手，提供快速问题解答', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: '会议纪要知识库', url: `${DIFY}/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents` }] },
       { icon: '🤖', color: 'orange', title: 'TFS迁移GIT小助手', desc: 'TFS迁移GIT助手，协助代码从TFS迁移到GIT', status: 'active', statusText: '运行中', meta: 'Dify Chatbot' },
     ],
   },
@@ -58,8 +61,8 @@ const sectionData: Record<string, SectionData> = {
     title: 'RAG',
     subtitle: '检索增强生成配置',
     cards: [
-      { icon: '📚', color: 'blue', title: 'TFS产品文档', desc: 'TFS产品文档', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: 'http://localhost:8080/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents' },
-      { icon: '📚', color: 'purple', title: '会议纪要知识库', desc: '会议纪要知识库', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: 'http://localhost:8080/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents' },
+      { icon: '📚', color: 'blue', title: 'TFS产品文档', desc: 'TFS产品文档', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: `${DIFY}/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents` },
+      { icon: '📚', color: 'purple', title: '会议纪要知识库', desc: '会议纪要知识库', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: `${DIFY}/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents` },
     ],
   },
   stats: {
@@ -75,10 +78,10 @@ const sectionData: Record<string, SectionData> = {
     title: '会话',
     subtitle: '管理和查看Agent会话记录',
     cards: [
-      { icon: '💬', color: 'blue', title: '会话 1', desc: '与赛诺联合通用小助理对话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: '/session.html?bot=af3iXcoKxjqyA41D&name=赛诺联合通用小助理' },
-      { icon: '💬', color: 'purple', title: '会话 2', desc: '与TFS代码同步小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: '/session.html?bot=G81boXDVlGHcIn2G&name=TFS代码同步小助理' },
-      { icon: '💬', color: 'orange', title: '会话 3', desc: '与知识库问答小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: '/session.html?bot=tGnNbmEg0ou9ANn0&name=知识库问答小助理' },
-      { icon: '💬', color: 'green', title: '会话 4', desc: '与TFS迁移GIT小助手会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: '/session.html?bot=nmZEDqKpr2HHPMdJ&name=TFS迁移GIT小助手' },
+      { icon: '💬', color: 'blue', title: '会话 1', desc: '与赛诺联合通用小助理对话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=VBfmK4pPwaPkoX1T&name=赛诺联合通用小助理` },
+      { icon: '💬', color: 'purple', title: '会话 2', desc: '与TFS代码同步小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=G81boXDVlGHcIn2G&name=TFS代码同步小助理` },
+      { icon: '💬', color: 'orange', title: '会话 3', desc: '与GBSimulator小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=wAUha3yd0r4IX2BK&name=GBSimulator小助理` },
+      { icon: '💬', color: 'green', title: '会话 4', desc: '与AI-STUDIO小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=XBg7F9ckxgxCtfW3&name=AI-STUDIO小助理` },
     ],
   },
   channel: {

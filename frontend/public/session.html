@@ -426,19 +426,100 @@
     <script>
         // 从 URL 参数读取 chatbot 配置
         const urlParams = new URLSearchParams(window.location.search);
-        const botId = urlParams.get('bot') || 'af3iXcoKxjqyA41D';
+        const botId = urlParams.get('bot') || 'VBfmK4pPwaPkoX1T';
         const botName = urlParams.get('name') || 'AI 助手';
 
-        // 设置 iframe 和标题
-        document.getElementById('chatbotFrame').src = 'http://10.10.11.107:8080/chatbot/' + botId;
-        document.getElementById('currentAgent').textContent = botName;
+        // Dify 服务直连地址（用于新标签页打开）
+        const DIFY_BASE = 'http://10.10.9.65';
+
+        // Dify 代理地址：根据运行环境自动选择
+        // 开发环境：Vite dev server (localhost:5173) + 独立代理服务器 (localhost:5174)
+        // 生产环境：Nginx 同一域名下代理（相对路径 /chat/{token}）
+        function getDifyProxyUrl() {
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            
+            // 开发环境判断：Vite 默认端口 5173/5174
+            if (port === '5173' || port === '5174') {
+                return `http://${hostname}:5174`;
+            }
+            // 生产环境：使用相对路径，由 Nginx 代理转发
+            return '';
+        }
+
+        function initPage() {
+            // 通过反向代理访问 Dify，解决：
+            // 1. X-Frame-Options: DENY 阻止 iframe 嵌入
+            // 2. Dify Next.js 应用的 /_next/、/api/ 等绝对路径资源加载问题
+            const proxyUrl = getDifyProxyUrl();
+            const chatbotUrl = proxyUrl ? `${proxyUrl}/chat/${botId}` : `/chat/${botId}`;
+            document.getElementById('chatbotFrame').src = chatbotUrl;
+            document.getElementById('currentAgent').textContent = botName;
+            console.log('Loading chatbot from:', chatbotUrl);
+            renderSessionList();
+
+            const frame = document.getElementById('chatbotFrame');
+            frame.onload = function() {
+                console.log('Chatbot iframe loaded successfully');
+            };
+            frame.onerror = function() {
+                console.error('Chatbot iframe failed to load');
+            };
+        }
+        
+        function showLoginPrompt() {
+            // 检查是否已经显示过提示，避免重复显示
+            if (document.getElementById('login-prompt')) {
+                return;
+            }
+            
+            const chatArea = document.querySelector('.chat-area');
+            const prompt = document.createElement('div');
+            prompt.id = 'login-prompt';
+            prompt.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                text-align: center;
+                z-index: 1000;
+            `;
+            prompt.innerHTML = `
+                <h3 style="margin-bottom: 16px; color: #333;">需要登录 Dify</h3>
+                <p style="margin-bottom: 20px; color: #666; font-size: 14px;">
+                    由于安全策略限制，请在新标签页中登录 Dify 后刷新本页面
+                </p>
+                <button onclick="openDifyLogin()" style="
+                    padding: 10px 24px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">
+                    打开 Dify 登录页面
+                </button>
+            `;
+            chatArea.appendChild(prompt);
+        }
+        
+        function openDifyLogin() {
+            // 通过代理在新标签页打开 Dify 登录页面
+            // 登录后的 Cookie 会保存在代理域名下，iframe 可以直接使用
+            window.open(`${DIFY_PROXY}/chat/${botId}`, '_blank');
+        }
 
         // 会话列表数据
         const sessions = [
-            { id: 1, agent: '赛诺联合通用小助理', botId: 'af3iXcoKxjqyA41D', preview: '通用智能问答助手', tag: 'online' },
+            { id: 1, agent: '赛诺联合通用小助理', botId: 'VBfmK4pPwaPkoX1T', preview: '通用智能问答助手', tag: 'online' },
             { id: 2, agent: 'TFS代码同步小助理', botId: 'G81boXDVlGHcIn2G', preview: 'TFS代码同步与版本管理', tag: 'online' },
-            { id: 3, agent: '知识库问答小助理', botId: 'tGnNbmEg0ou9ANn0', preview: '知识库查询助手，提供快速问题解答', tag: 'online' },
-            { id: 4, agent: 'TFS迁移GIT小助手', botId: 'nmZEDqKpr2HHPMdJ', preview: 'TFS迁移GIT助手，协助代码从TFS迁移到GIT', tag: 'online' },
+            { id: 3, agent: 'GBSimulator小助理', botId: 'wAUha3yd0r4IX2BK', preview: 'GBSimulator问答小助手', tag: 'offline' },
+            { id: 4, agent: 'AI-STUDIO小助理', botId: 'XBg7F9ckxgxCtfW3', preview: 'AI-STUDIO问答小助手,支持在线检索', tag: 'online' },
         ];
 
         const currentBotId = botId;
@@ -467,7 +548,7 @@
         }
 
         // 初始化
-        renderSessionList();
+        initPage();
     </script>
 </body>
 </html>
