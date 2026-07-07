@@ -102,7 +102,7 @@ const sectionData: Record<string, SectionData> = {
     subtitle: '管理和查看Agent会话记录',
     cards: [
       { icon: '💬', color: 'blue', title: '会话 1', desc: '与赛诺联合通用小助理对话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=VBfmK4pPwaPkoX1T&name=赛诺联合通用小助理` },
-      { icon: '💬', color: 'purple', title: '会话 2', desc: '与TFS代码同步小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=G81boXDVlGHcIn2G&name=TFS代码同步小助理` },
+      { icon: '💬', color: 'purple', title: '会话 2', desc: '与TFS代码同步小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=ZKfkI1YyNKSRd28x&name=TFS代码同步小助理` },
       { icon: '💬', color: 'orange', title: '会话 3', desc: '与GBSimulator小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=wAUha3yd0r4IX2BK&name=GBSimulator小助理` },
       { icon: '💬', color: 'green', title: '会话 4', desc: '与AI-STUDIO小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=XBg7F9ckxgxCtfW3&name=AI-STUDIO小助理` },
     ],
