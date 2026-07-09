@@ -39,6 +39,33 @@ export interface SkillListParams {
   page_size?: number;
 }
 
+// ── Dify App types ──
+
+export interface DifyAppTag {
+  name: string;
+  type: string;
+}
+
+export interface DifyApp {
+  id: string;
+  name: string;
+  description: string;
+  mode: string;
+  tags: DifyAppTag[];
+}
+
+export interface DifyAppsResponse {
+  data: DifyApp[];
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export async function fetchDifyApps(): Promise<DifyAppsResponse> {
+  const res = await api.get<DifyAppsResponse>('/dify/apps');
+  return res.data;
+}
+
 export async function fetchSkills(params: SkillListParams = {}): Promise<SkillListResponse> {
   const res = await api.get<SkillListResponse>('/skills', { params });
   return res.data;

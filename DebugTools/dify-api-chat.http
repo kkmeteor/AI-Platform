@@ -1,0 +1,57 @@
+@baseUrl = http://10.10.9.65
+@token = app-xc0lJvE8MRE4GiIWUF32eD3t
+
+###请求列表
+
+
+### 调用通用小助理
+POST {{baseUrl}}/v1/chat-messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inputs": {
+    "city": "北京"
+  },
+  "query": "颐和园大还是圆明园大",
+  "response_mode": "streaming",
+  "conversation_id": "",
+  "user": "tengfei.ma",
+  "files": []
+}
+
+### 获取应用信息
+GET {{baseUrl}}/v1/info
+Authorization: Bearer {{token}}
+
+### 获取应用参数
+GET {{baseUrl}}/v1/parameters
+Authorization: Bearer {{token}}
+###
+
+### 获取应用元数据
+GET {{baseUrl}}/v1/meta
+Authorization: Bearer {{token}}
+
+### POST /console/api/login
+# @name login
+POST {{baseUrl}}/console/api/login
+Content-Type: application/json
+
+{
+  "email": "tengfei.ma@sinounion.com",
+  "password": "bWV0MTk4NzQyOX4=",
+  "language": "zh-Hans",
+  "remember_me": true
+}
+
+@csrf_token = {{login.response.headers.x-csrf-token}}
+
+### 获取应用列表 (登录后 Cookie 自动携带，csrf_token 需通过 login.bat 写入环境变量)
+GET {{baseUrl}}/console/api/apps
+x-csrf-token: {{csrf_token}}
+
+### 获取应用列表
+GET http://localhost:8000/api/dify/apps
+
+

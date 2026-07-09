@@ -25,6 +25,8 @@ services:
       # Persist data to host C:\Data directory
       - C:/Data/skills.db:/app/data/skills.db
       - C:/Data/uploads:/app/uploads
+      # Mount config.json for Dify credentials (runtime override, no rebuild needed)
+      - ./config/config.json:/config/config.json:ro
     environment:
       - DATABASE_URL=sqlite:///./data/skills.db
     networks:

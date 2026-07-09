@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/sino.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI-Studio-Sinounion</title>
     <style>
@@ -106,11 +106,23 @@
         return '';
       }
 
-      // 初始化 iframe src
+      // ── 用户标识：生成/获取持久化 user ID，绑定 Dify 对话历史 ──
+      function getDifyUserId() {
+        let uid = localStorage.getItem('dify_user_id');
+        if (!uid) {
+          uid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8); return v.toString(16); });
+          localStorage.setItem('dify_user_id', uid);
+        }
+        return uid;
+      }
+
+      // 初始化 iframe src（携带 user 参数，使对话历史绑定用户而非 session）
       document.addEventListener('DOMContentLoaded', function() {
         const proxyUrl = getDifyProxyUrl();
+        const userId = getDifyUserId();
         const frame = document.getElementById('dify-chat-frame');
-        frame.src = proxyUrl ? `${proxyUrl}/chat/VBfmK4pPwaPkoX1T` : '/chat/VBfmK4pPwaPkoX1T';
+        const baseUrl = proxyUrl ? `${proxyUrl}/chat/VBfmK4pPwaPkoX1T` : '/chat/VBfmK4pPwaPkoX1T';
+        frame.src = `${baseUrl}?user=${encodeURIComponent(userId)}`;
       });
 
       function toggleDifyChat() {

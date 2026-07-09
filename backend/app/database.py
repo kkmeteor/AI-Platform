@@ -1,13 +1,12 @@
-import os
 import sqlite3
+from pathlib import Path
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    f"sqlite:///{os.path.join(BASE_DIR, 'skills.db')}"
-)
+from app.config import get_settings
+
+settings = get_settings()
+DATABASE_URL = settings.database_url
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

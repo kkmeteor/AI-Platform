@@ -50,9 +50,6 @@ python,tool,automation
 Content-Disposition: form-data; name="file"; filename="example.zip"
 Content-Type: application/zip
 
-< ./test_upload.zip
-------FormBoundary--
-
 ### 下载 Skill 文件（替换 ID 为实际值）
 GET {{baseUrl}}/skills/1/download
 Accept: application/zip
@@ -60,3 +57,5 @@ Accept: application/zip
 ### 删除 Skill（替换 ID 为实际值）
 DELETE {{baseUrl}}/skills/1
 Accept: application/json
+
+

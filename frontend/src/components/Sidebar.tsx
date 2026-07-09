@@ -41,7 +41,7 @@ const navGroups: NavGroup[] = [
 export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
   return (
     <aside className="sidebar">
-      <div className="system-name">SinoUnion AI Agent Studio</div>
+      <div className="system-name">SinoAI Platform</div>
 
       {navGroups.map((group) => (
         <div key={group.title} className="nav-group">

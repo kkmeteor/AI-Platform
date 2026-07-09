@@ -13,10 +13,11 @@ from app.database import get_db
 from app.models import Skill
 from app.schemas import SkillCreate, SkillResponse, SkillListResponse, SkillUpdate
 
+from app.config import get_settings
+
 router = APIRouter()
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+settings = get_settings()
 
 
 def require_admin(request: Request):
@@ -87,7 +88,7 @@ async def create_skill(
     # 生成唯一文件名
     file_ext = os.path.splitext(payload.file_name)[1]
     unique_filename = f"{uuid.uuid4().hex}{file_ext}"
-    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    file_path = os.path.join(settings.upload_dir, unique_filename)
 
     # 保存文件
     with open(file_path, "wb") as f:
@@ -116,7 +117,7 @@ def download_skill(skill_id: int, db: Session = Depends(get_db)):
     if not skill:
         raise HTTPException(status_code=404, detail="Skill not found")
 
-    file_path = os.path.join(UPLOAD_DIR, skill.file_path)
+    file_path = os.path.join(settings.upload_dir, skill.file_path)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on disk")
 
@@ -166,7 +167,7 @@ def delete_skill(
         raise HTTPException(status_code=403, detail="Cannot delete a readonly skill")
 
     # 删除文件
-    file_path = os.path.join(UPLOAD_DIR, skill.file_path)
+    file_path = os.path.join(settings.upload_dir, skill.file_path)
     if os.path.exists(file_path):
         os.remove(file_path)
 

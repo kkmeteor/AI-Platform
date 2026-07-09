@@ -37,30 +37,22 @@ echo.
 REM Switch to project root directory
 cd /d "%~dp0"
 
-REM Check and build backend image
-echo [INFO] Checking backend image...
-docker image inspect dcloud-market-backend:latest >nul 2>&1
+REM Build backend image (always rebuild to include latest code)
+echo [INFO] Building backend image...
+docker build -t dcloud-market-backend:latest ./backend
 if errorlevel 1 (
-    echo [INFO] Backend image not found, building...
-    docker build -t dcloud-market-backend:latest ./backend
-    if errorlevel 1 (
-        echo [ERROR] Backend image build failed!
-        pause
-        exit /b 1
-    )
+    echo [ERROR] Backend image build failed!
+    pause
+    exit /b 1
 )
 
-REM Check and build frontend image
-echo [INFO] Checking frontend image...
-docker image inspect dcloud-market-frontend:latest >nul 2>&1
+REM Build frontend image (always rebuild to include latest code)
+echo [INFO] Building frontend image...
+docker build -t dcloud-market-frontend:latest ./frontend
 if errorlevel 1 (
-    echo [INFO] Frontend image not found, building...
-    docker build -t dcloud-market-frontend:latest ./frontend
-    if errorlevel 1 (
-        echo [ERROR] Frontend image build failed!
-        pause
-        exit /b 1
-    )
+    echo [ERROR] Frontend image build failed!
+    pause
+    exit /b 1
 )
 
 echo [OK] All local images ready.

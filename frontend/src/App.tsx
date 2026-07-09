@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Spin } from 'antd';
 import Sidebar from './components/Sidebar';
 import PlaceholderPage from './components/PlaceholderPage';
 import MarketPlace from './pages/MarketPlace';
+import { fetchDifyApps } from './services/api';
+import type { DifyApp, DifyAppTag } from './services/api';
 import './App.css';
 
 /** Dify server direct URL (CORS configured on Dify server side) */
@@ -17,35 +20,34 @@ interface ToolInfo {
   description: string;
 }
 
+type CardColor = 'blue' | 'purple' | 'green' | 'orange';
+
+interface CardData {
+  icon: string;
+  color: CardColor;
+  title: string;
+  desc: string;
+  status: 'active' | 'inactive';
+  statusText: string;
+  meta: string;
+  link?: string;
+  externalLink?: string;
+  knowledgeLinks?: KnowledgeLink[];
+  tools?: ToolInfo[];
+  config?: Record<string, any>;
+}
+
 interface SectionData {
   title: string;
   subtitle: string;
-  cards: {
-    icon: string;
-    color: 'blue' | 'purple' | 'green' | 'orange';
-    title: string;
-    desc: string;
-    status: 'active' | 'inactive';
-    statusText: string;
-    meta: string;
-    link?: string;
-    externalLink?: string;
-    knowledgeLinks?: KnowledgeLink[];
-    tools?: ToolInfo[];
-    config?: Record<string, any>;
-  }[];
+  cards: CardData[];
 }
 
 const sectionData: Record<string, SectionData> = {
   agent: {
     title: 'Agent',
     subtitle: '管理和配置您的智能代理',
-    cards: [
-      { icon: '🤖', color: 'blue', title: '赛诺联合通用小助理', desc: '赛诺联合通用AI助手，提供综合智能问答服务', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', externalLink: `${DIFY}/app/879ece2d-418d-4742-8389-24535d9546af/configuration` },
-      { icon: '🤖', color: 'purple', title: 'GBSimulator小助手', desc: 'GBSimulator问答小助手，只基于知识库回答', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: 'TFS产品文档知识库', url: `${DIFY}/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents` }], externalLink: `${DIFY}/app/0ff2b915-95a5-4bb2-927d-84244168fe10/workflow` },
-      { icon: '🤖', color: 'green', title: 'AI-STUDIO智能体', desc: '基于本产品开发文档回答，可以联网检索', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', knowledgeLinks: [{ label: '会议纪要知识库', url: `${DIFY}/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents` }], externalLink: `${DIFY}/app/84e357ca-70be-4ad3-8767-274aab843c4c/workflow` },
-      { icon: '🤖', color: 'orange', title: 'GBSimulator代码同步助手', desc: 'TFS迁移GIT助手，协助代码从TFS迁移到GIT', status: 'active', statusText: '运行中', meta: 'Dify Chatbot', externalLink: `${DIFY}/app/5cb64c42-4964-4867-ab52-f620cc704601/workflow` },
-    ],
+    cards: [],
   },
   tool: {
     title: 'Tool',
@@ -76,6 +78,24 @@ const sectionData: Record<string, SectionData> = {
           { name: 'check_tfs_health', description: '检查TFS服务健康状态。' },
           { name: 'query_changeset_history', description: '查询TFS变更集历史。' },
           { name: 'compare_with_status', description: '比较源项目和目标项目之间的变更集，自动合并本地状态标记，并筛选出**待处理(Pending)**和**需要合并(NeedMerge)**的变更集。' }
+        ]
+      },
+      { 
+        icon: '🔗', 
+        color: 'blue', 
+        title: 'jenkins-tool', 
+        desc: 'Jenkins MCP, 操作Jenkins', 
+        status: 'active', 
+        statusText: '在线', 
+        meta: 'HTTP SSE',
+        config: {
+          "url": "http://10.10.11.194:9887/mcp",
+          "type": "http"
+        },
+        tools: [
+          { name: 'check_jenkins_health', description: '检查Jenkins服务健康状态。' },
+          { name: 'query_build_history', description: '查询Jenkins构建历史。' },
+          { name: 'trigger_build', description: '触发Jenkins构建。' }
         ]
       },
     ],
@@ -125,12 +145,71 @@ const sectionData: Record<string, SectionData> = {
   },
 };
 
+function getInitialSection(): string {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('section') || 'skill';
+}
+
 function App() {
-  const [activeSection, setActiveSection] = useState('skill');
+  const [activeSection, setActiveSection] = useState(getInitialSection());
+  const [agentCards, setAgentCards] = useState<CardData[]>([]);
+  const [agentLoading, setAgentLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAgents = async () => {
+      try {
+        const res = await fetchDifyApps();
+        const filtered = (res.data || []).filter((app: DifyApp) =>
+          app.tags?.some((t: DifyAppTag) => t.name === 'online' && t.type === 'app')
+        );
+        const colors: CardColor[] = ['blue', 'purple', 'green', 'orange'];
+        const cards: CardData[] = filtered.map((app, idx) => ({
+          icon: '🤖',
+          color: colors[idx % colors.length],
+          title: app.name,
+          desc: app.description || 'Dify AI Assistant',
+          status: 'active' as const,
+          statusText: '运行中',
+          meta: 'Dify Chatbot',
+          externalLink: `${DIFY}/app/${app.id}/workflow`,
+        }));
+        // Merge knowledge links for specific apps
+        cards.forEach(card => {
+          if (card.title === 'GBSimulator小助手') {
+            card.knowledgeLinks = [{ label: 'TFS产品文档知识库', url: `${DIFY}/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents` }];
+          } else if (card.title === 'AI-STUDIO智能体') {
+            card.knowledgeLinks = [{ label: '会议纪要知识库', url: `${DIFY}/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents` }];
+          }
+        });
+        setAgentCards(cards);
+      } catch {
+        setAgentCards([]);
+      } finally {
+        setAgentLoading(false);
+      }
+    };
+    loadAgents();
+  }, []);
+
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', section);
+    window.history.replaceState({}, '', url.toString());
+  };
 
   const renderContent = () => {
     if (activeSection === 'skill') {
       return <MarketPlace />;
+    }
+
+    if (activeSection === 'agent') {
+      const data = sectionData[activeSection];
+      return (
+        <Spin spinning={agentLoading}>
+          <PlaceholderPage title={data.title} subtitle={data.subtitle} cards={agentCards} />
+        </Spin>
+      );
     }
 
     const data = sectionData[activeSection];
@@ -143,7 +222,7 @@ function App() {
 
   return (
     <div className="app-layout">
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+      <Sidebar activeSection={activeSection} onSectionChange={handleSectionChange} />
       <main className="main-content">
         {renderContent()}
       </main>

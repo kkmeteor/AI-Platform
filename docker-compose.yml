@@ -27,6 +27,8 @@ services:
       - C:/Data/skills.db:/app/data/skills.db
       # 上传文件存放在 C:\Data\uploads 目录
       - C:/Data/uploads:/app/uploads
+      # 挂载 config.json（运行时覆盖，无需重建镜像）
+      - ./config/config.json:/config/config.json:ro
     environment:
       - DATABASE_URL=sqlite:///./data/skills.db
     networks:

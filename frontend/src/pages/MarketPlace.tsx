@@ -52,6 +52,12 @@ export default function MarketPlace() {
 
   return (
     <div style={{ padding: '0' }}>
+      {/* Page header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 600, color: '#1a1d23', margin: '0 0 8px 0' }}>Skills</h1>
+        <p style={{ fontSize: 14, color: '#666', margin: 0 }}>管理和配置您的 Skill 插件</p>
+      </div>
+
       {/* Header with search and upload */}
       <div
         style={{

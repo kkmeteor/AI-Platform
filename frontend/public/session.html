@@ -341,31 +341,31 @@
 <body>
     <!-- 左侧侧边栏 -->
     <aside class="sidebar">
-        <div class="system-name" onclick="goHome()">SinoUnion AI Agent Studio</div>
+        <div class="system-name" onclick="goHome()">SinoAI Platform</div>
         
         <div class="nav-group">
             <div class="group-title">Agent Studio</div>
-            <div class="nav-item" onclick="goHome()">
+            <div class="nav-item" onclick="goHome('agent')">
                 <span class="nav-icon">🤖</span>
                 <span class="nav-text">Agents</span>
             </div>
-            <div class="nav-item" onclick="goHome()">
+            <div class="nav-item" onclick="goHome('skill')">
                 <span class="nav-icon">⚡</span>
                 <span class="nav-text">Skills</span>
             </div>
-            <div class="nav-item" onclick="goHome()">
+            <div class="nav-item" onclick="goHome('tool')">
                 <span class="nav-icon">🔧</span>
                 <span class="nav-text">Tools</span>
             </div>
-            <div class="nav-item" onclick="goHome()">
+            <div class="nav-item" onclick="goHome('mcp')">
                 <span class="nav-icon">🔗</span>
                 <span class="nav-text">MCPs</span>
             </div>
-            <div class="nav-item" onclick="goHome()">
+            <div class="nav-item" onclick="goHome('rag')">
                 <span class="nav-icon">📚</span>
                 <span class="nav-text">RAGs</span>
             </div>
-            <div class="nav-item" onclick="goHome()">
+            <div class="nav-item" onclick="goHome('stats')">
                 <span class="nav-icon">📊</span>
                 <span class="nav-text">统计</span>
             </div>
@@ -377,11 +377,11 @@
                 <span class="nav-icon">💬</span>
                 <span class="nav-text">会话</span>
             </div>
-            <div class="nav-item" onclick="goHome()">
+            <div class="nav-item" onclick="goHome('channel')">
                 <span class="nav-icon">📡</span>
                 <span class="nav-text">通道</span>
             </div>
-            <div class="nav-item" onclick="goHome()">
+            <div class="nav-item" onclick="goHome('memory')">
                 <span class="nav-icon">🧠</span>
                 <span class="nav-text">记忆</span>
             </div>
@@ -424,6 +424,16 @@
     </div>
 
     <script>
+        // ── 用户标识：生成/获取持久化 user ID，绑定 Dify 对话历史 ──
+        function getDifyUserId() {
+            let uid = localStorage.getItem('dify_user_id');
+            if (!uid) {
+                uid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8); return v.toString(16); });
+                localStorage.setItem('dify_user_id', uid);
+            }
+            return uid;
+        }
+
         // 从 URL 参数读取 chatbot 配置
         const urlParams = new URLSearchParams(window.location.search);
         const botId = urlParams.get('bot') || 'VBfmK4pPwaPkoX1T';
@@ -452,7 +462,9 @@
             // 1. X-Frame-Options: DENY 阻止 iframe 嵌入
             // 2. Dify Next.js 应用的 /_next/、/api/ 等绝对路径资源加载问题
             const proxyUrl = getDifyProxyUrl();
-            const chatbotUrl = proxyUrl ? `${proxyUrl}/chat/${botId}` : `/chat/${botId}`;
+            const userId = getDifyUserId();
+            const baseUrl = proxyUrl ? `${proxyUrl}/chat/${botId}` : `/chat/${botId}`;
+            const chatbotUrl = `${baseUrl}?user=${encodeURIComponent(userId)}`;
             document.getElementById('chatbotFrame').src = chatbotUrl;
             document.getElementById('currentAgent').textContent = botName;
             console.log('Loading chatbot from:', chatbotUrl);
@@ -543,8 +555,9 @@
             window.location.href = '/session.html?bot=' + id + '&name=' + encodeURIComponent(name);
         }
 
-        function goHome() {
-            window.location.href = '/';
+        function goHome(section) {
+            const url = section ? '/?section=' + section : '/';
+            window.location.href = url;
         }
 
         // 初始化

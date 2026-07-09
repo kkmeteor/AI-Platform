@@ -1,0 +1,27 @@
+@baseUrl = http://10.10.9.65/v1
+@token = dataset-TwggUOKC66ON2sZvjm7KgK3D
+###请求列表
+
+
+### 获取知识库列表
+GET {{baseUrl}}/datasets
+Authorization: Bearer {{token}}
+
+### 获取知识库详情
+GET {{baseUrl}}/datasets/a9122fa2-5b21-47e9-a4af-473876433297
+Authorization: Bearer {{token}}
+
+### 知识库检索
+POST {{baseUrl}}/datasets/a9122fa2-5b21-47e9-a4af-473876433297/retrieve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "query": "TFS代码工具是什么",
+  "external_retrieval_model": {
+    "top_k": 123,
+    "score_threshold": 123,
+    "score_threshold_enabled": true
+  },
+  "attachment_ids": []
+}
