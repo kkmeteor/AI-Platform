@@ -457,7 +457,7 @@
             return '';
         }
 
-        function initPage() {
+        async function initPage() {
             // 通过反向代理访问 Dify，解决：
             // 1. X-Frame-Options: DENY 阻止 iframe 嵌入
             // 2. Dify Next.js 应用的 /_next/、/api/ 等绝对路径资源加载问题
@@ -468,7 +468,7 @@
             document.getElementById('chatbotFrame').src = chatbotUrl;
             document.getElementById('currentAgent').textContent = botName;
             console.log('Loading chatbot from:', chatbotUrl);
-            renderSessionList();
+            await loadSessions();
 
             const frame = document.getElementById('chatbotFrame');
             frame.onload = function() {
@@ -526,13 +526,27 @@
             window.open(`${DIFY_PROXY}/chat/${botId}`, '_blank');
         }
 
-        // 会话列表数据
-        const sessions = [
-            { id: 1, agent: '赛诺联合通用小助理', botId: 'VBfmK4pPwaPkoX1T', preview: '通用智能问答助手', tag: 'online' },
-            { id: 2, agent: 'TFS代码同步小助理', botId: 'ZKfkI1YyNKSRd28x', preview: 'TFS代码同步与版本管理', tag: 'online' },
-            { id: 3, agent: 'GBSimulator小助理', botId: 'wAUha3yd0r4IX2BK', preview: 'GBSimulator问答小助手', tag: 'offline' },
-            { id: 4, agent: 'AI-STUDIO小助理', botId: 'XBg7F9ckxgxCtfW3', preview: 'AI-STUDIO问答小助手,支持在线检索', tag: 'online' },
-        ];
+        // ── 动态加载会话列表 ──
+        let sessions = [];
+
+        async function loadSessions() {
+            try {
+                const resp = await fetch('/api/dify/chat-apps');
+                if (!resp.ok) throw new Error('Failed to load sessions');
+                const apps = await resp.json();
+                sessions = apps.map((app, idx) => ({
+                    id: idx + 1,
+                    agent: app.name,
+                    botId: app.access_token,
+                    preview: app.description || app.name,
+                    tag: 'online',
+                }));
+            } catch (err) {
+                console.error('Failed to load session list:', err);
+                sessions = [];
+            }
+            renderSessionList();
+        }
 
         const currentBotId = botId;
 

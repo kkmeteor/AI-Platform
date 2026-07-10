@@ -3,7 +3,7 @@ import { Spin } from 'antd';
 import Sidebar from './components/Sidebar';
 import PlaceholderPage from './components/PlaceholderPage';
 import MarketPlace from './pages/MarketPlace';
-import { fetchDifyApps } from './services/api';
+import { fetchDifyApps, fetchDifyChatApps } from './services/api';
 import type { DifyApp, DifyAppTag } from './services/api';
 import './App.css';
 
@@ -120,12 +120,7 @@ const sectionData: Record<string, SectionData> = {
   session: {
     title: '会话',
     subtitle: '管理和查看Agent会话记录',
-    cards: [
-      { icon: '💬', color: 'blue', title: '会话 1', desc: '与赛诺联合通用小助理对话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=VBfmK4pPwaPkoX1T&name=赛诺联合通用小助理` },
-      { icon: '💬', color: 'purple', title: '会话 2', desc: '与TFS代码同步小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=ZKfkI1YyNKSRd28x&name=TFS代码同步小助理` },
-      { icon: '💬', color: 'orange', title: '会话 3', desc: '与GBSimulator小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=wAUha3yd0r4IX2BK&name=GBSimulator小助理` },
-      { icon: '💬', color: 'green', title: '会话 4', desc: '与AI-STUDIO小助理会话', status: 'active', statusText: '进行中', meta: 'Dify Chatbot', link: `/session.html?bot=XBg7F9ckxgxCtfW3&name=AI-STUDIO小助理` },
-    ],
+    cards: [],  // dynamically loaded via useEffect
   },
   channel: {
     title: '通道',
@@ -154,6 +149,8 @@ function App() {
   const [activeSection, setActiveSection] = useState(getInitialSection());
   const [agentCards, setAgentCards] = useState<CardData[]>([]);
   const [agentLoading, setAgentLoading] = useState(true);
+  const [sessionCards, setSessionCards] = useState<CardData[]>([]);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   useEffect(() => {
     const loadAgents = async () => {
@@ -191,6 +188,31 @@ function App() {
     loadAgents();
   }, []);
 
+  useEffect(() => {
+    const loadSessionCards = async () => {
+      try {
+        const apps = await fetchDifyChatApps();
+        const colors: CardColor[] = ['blue', 'purple', 'green', 'orange'];
+        const cards: CardData[] = apps.map((app, idx) => ({
+          icon: app.icon || '💬',
+          color: colors[idx % colors.length],
+          title: app.name,
+          desc: app.description || 'Dify Chatbot',
+          status: 'active' as const,
+          statusText: '运行中',
+          meta: 'Dify Chatbot',
+          link: `/session.html?bot=${app.access_token}&name=${encodeURIComponent(app.name)}`,
+        }));
+        setSessionCards(cards);
+      } catch {
+        setSessionCards([]);
+      } finally {
+        setSessionLoading(false);
+      }
+    };
+    loadSessionCards();
+  }, []);
+
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
     const url = new URL(window.location.href);
@@ -208,6 +230,15 @@ function App() {
       return (
         <Spin spinning={agentLoading}>
           <PlaceholderPage title={data.title} subtitle={data.subtitle} cards={agentCards} />
+        </Spin>
+      );
+    }
+
+    if (activeSection === 'session') {
+      const data = sectionData[activeSection];
+      return (
+        <Spin spinning={sessionLoading}>
+          <PlaceholderPage title={data.title} subtitle={data.subtitle} cards={sessionCards} />
         </Spin>
       );
     }

@@ -91,3 +91,67 @@ async def get_dify_apps():
     if resp.status_code != 200:
         raise HTTPException(status_code=resp.status_code, detail=resp.text)
     return resp.json()
+
+
+@router.get("/chat-apps")
+async def get_dify_chat_apps():
+    """Return a curated list of online chat apps with site tokens.
+
+    1. Fetches all apps from Dify (paginated).
+    2. Filters to those tagged ``online`` (type=app).
+    3. For each, fetches the app detail to obtain ``site.access_token``
+       and ``site.icon``.
+    4. Returns a flattened list suitable for frontend card rendering.
+    """
+    # Step 1: get app list
+    list_resp = await _session.request("GET", "/console/api/apps", params={"page": 1, "limit": 100})
+    if list_resp.status_code != 200:
+        raise HTTPException(status_code=list_resp.status_code, detail=list_resp.text)
+
+    apps: list[dict[str, Any]] = (list_resp.json().get("data") or [])
+
+    # Step 2: filter online apps
+    online_apps = [
+        app for app in apps
+        if any(
+            t.get("name") == "online" and t.get("type") == "app"
+            for t in (app.get("tags") or [])
+        )
+    ]
+
+    # Step 3: fetch detail for each app to get site.access_token
+    result: list[dict[str, Any]] = []
+    for app in online_apps:
+        app_id = app.get("id")
+        if not app_id:
+            continue
+        detail_resp = await _session.request("GET", f"/console/api/apps/{app_id}")
+        if detail_resp.status_code != 200:
+            logger.warning("Failed to fetch detail for app %s: %s", app_id, detail_resp.status_code)
+            continue
+        detail = detail_resp.json()
+        site_info = detail.get("site") or {}
+        result.append({
+            "id": app.get("id"),
+            "name": app.get("name"),
+            "description": app.get("description") or "",
+            "icon": site_info.get("icon") or "🤖",
+            "icon_background": site_info.get("icon_background") or "",
+            "access_token": site_info.get("access_token") or "",
+            "mode": app.get("mode") or "",
+        })
+
+    return result
+
+
+@router.get("/apps/{app_id}")
+async def get_dify_app_detail(app_id: str):
+    """Proxy: GET /console/api/apps/{app_id} – returns Dify app detail.
+
+    The response includes site info such as ``site.access_token``
+    and ``site.icon`` needed for chat session configuration.
+    """
+    resp = await _session.request("GET", f"/console/api/apps/{app_id}")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+    return resp.json()

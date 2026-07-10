@@ -99,6 +99,23 @@ export async function togglePinSkill(id: number, isPinned: boolean): Promise<Ski
   return res.data;
 }
 
+// ── Dify Chat Apps (for dynamic session cards) ──
+
+export interface DifyChatApp {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  icon_background: string;
+  access_token: string;
+  mode: string;
+}
+
+export async function fetchDifyChatApps(): Promise<DifyChatApp[]> {
+  const res = await api.get<DifyChatApp[]>('/dify/chat-apps');
+  return res.data;
+}
+
 export function isAdmin(): boolean {
   return localStorage.getItem('role') === 'admin';
 }
