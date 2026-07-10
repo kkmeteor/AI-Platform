@@ -1,0 +1,69 @@
+@baseUrl = http://10.10.9.65
+@token = app-xc0lJvE8MRE4GiIWUF32eD3t
+
+###请求列表
+
+
+### 调用通用小助理
+POST {{baseUrl}}/v1/chat-messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "inputs": {
+    "city": "北京"
+  },
+  "query": "颐和园大还是圆明园大",
+  "response_mode": "streaming",
+  "conversation_id": "",
+  "user": "tengfei.ma",
+  "files": []
+}
+
+### 获取应用信息
+GET {{baseUrl}}/v1/info
+Authorization: Bearer {{token}}
+
+### 获取应用参数
+GET {{baseUrl}}/v1/parameters
+Authorization: Bearer {{token}}
+###
+
+### 获取应用元数据
+GET {{baseUrl}}/v1/meta
+Authorization: Bearer {{token}}
+
+### POST /console/api/login
+# @name login
+POST {{baseUrl}}/console/api/login
+Content-Type: application/json
+
+{
+  "email": "tengfei.ma@sinounion.com",
+  "password": "bWV0MTk4NzQyOX4=",
+  "language": "zh-Hans",
+  "remember_me": true
+}
+
+### 获取 JWT Token
+
+@csrf_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODM1OTQ2NDMsInN1YiI6ImQ3NGI0YWRlLTc5ODctNDUzMS05ZWI2LTU2OWU1ODE1YWE1MiJ9.iBAfQpc-wbklZP3rEBwryKB79nGE3wzbE4XN6MndfcY
+
+### 获取应用列表 (登录后 Cookie 自动携带，csrf_token 需通过 login.bat 写入环境变量)
+GET {{baseUrl}}/console/api/apps
+x-csrf-token: {{csrf_token}}
+
+### 获取应用详情 (登录后 Cookie 自动携带，csrf_token 需通过 login.bat 写入环境变量)
+GET {{baseUrl}}/console/api/apps/{{appId}}
+x-csrf-token: {{csrf_token}}
+
+### 获取应用列表
+
+@appId = 5f079734-5179-48d5-aeec-0ffef6e481a7
+POST {{baseUrl}}/console/api/apps/{{appId}}/site
+x-csrf-token: {{csrf_token}}
+
+{
+
+}
+

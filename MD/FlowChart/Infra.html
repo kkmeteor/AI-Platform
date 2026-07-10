@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>企业知识库-AiStudio+Dify+MinIO 整体架构规划</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            margin: 30px;
+            background-color: #f7f8fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: #233449;
+            text-align: center;
+            margin-top: 0;
+        }
+        .desc {
+            background: #eef5ff;
+            padding: 16px 20px;
+            border-left: 4px solid #2b7bdd;
+            border-radius: 6px;
+            margin: 20px 0;
+            line-height: 1.7;
+        }
+        .mermaid {
+            margin-top:20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>企业智能知识库整体架构规划</h1>
+        <div class="desc">
+            <strong>架构定位：</strong>
+            自研前端 AiStudio 作为用户入口，Dify 承担 Agent 编排、知识库管理、文档解析、向量化、RAG 检索核心能力；
+            MinIO 统一存储企业原始文档文件，实现文件与向量解耦、可扩容企业级私有化部署方案。
+            <br>
+            <strong>核心链路：</strong>
+            1. 用户在 AiStudio 提问/上传文档 → 经由网关转发至 Dify
+            2. Dify 上传原始文件存入 MinIO，文档自动切片向量化存入向量库
+            3. 问答时 Agent 执行 RAG 检索，召回相关文档片段生成回答返回前端
+            4. 配套同步程序实现 MinIO 文件变动自动同步进 Dify 知识库
+        </div>
+
+        <div class="mermaid">
+flowchart LR
+    subgraph 前端层 自研AiStudio
+        A[用户端页面<br/>对话交互/文档上传/检索查询/结果展示]
+    end
+
+    subgraph API网关 & 鉴权层
+        B[统一API网关<br/>身份校验、路由转发、限流、日志]
+    end
+
+    subgraph Dify 核心平台 Agent & 知识库中枢
+        C[Dify Web服务<br/>应用管理、对话接口、知识库API]
+        D[Dify Worker异步任务<br/>文档解析、文本拆分、向量化、增量同步]
+        E[Dify Agent编排引擎<br/>工具调用、多轮思考、RAG检索编排]
+    end
+
+    subgraph 存储分层
+        F[(MinIO 对象存储<br/>企业原始文档：PDF/Word/MD/Excel<br/>Dify上传附件、Agent生成文件)]
+        G[(向量数据库<br/>Chroma/PgVector/Qdrant<br/>存储文档向量分片，语义检索)]
+        H[(业务数据库 PostgreSQL<br/>对话记录、知识库元数据、文档映射关系)]
+    end
+
+    %% 数据流连线
+    A --> B
+    B --> C
+    C <--> D
+    C <--> E
+
+    %% 文件存储流向
+    C -.文件上传落地.-> F
+    D -.读取原始文档解析.-> F
+    D -.写入向量分片.-> G
+
+    %% 检索问答流向
+    E -.RAG召回查询.-> G
+    E -.读取文档原文预览.-> F
+    C <--> H
+
+    %% 补充运维辅助链路
+    I[定时同步服务<br/>监听MinIO新增/修改文件<br/>自动批量导入Dify知识库] -.事件同步.-> F
+    I -.调用Dify开放API.-> C
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default'
+        });
+    </script>
+</body>
+</html>

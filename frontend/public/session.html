@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会话 - Agent Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh;
+            display: flex;
+            background: #f0f2f5;
+        }
+        /* 左侧侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: #1a1d23;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .system-name {
+            padding: 20px 24px;
+            font-size: 20px;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: #667eea;
+            cursor: pointer;
+        }
+        .nav-group {
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .nav-group:last-child {
+            border-bottom: none;
+        }
+        .group-title {
+            padding: 8px 24px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            font-weight: 600;
+        }
+        .nav-item {
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .nav-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .nav-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            border-left-color: #667eea;
+            color: #667eea;
+        }
+        .nav-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+        .nav-text {
+            font-size: 14px;
+        }
+        /* 中部聊天区域 */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+        }
+        .chat-header {
+            padding: 16px 24px;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .agent-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .agent-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+        .agent-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1d23;
+        }
+        .agent-status {
+            font-size: 12px;
+            color: #666;
+        }
+        .chat-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #333;
+            cursor: pointer;
+        }
+        .action-btn:hover {
+            background: #eee;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .message {
+            display: flex;
+            gap: 12px;
+            max-width: 80%;
+        }
+        .message.user {
+            flex-direction: row-reverse;
+            align-self: flex-end;
+        }
+        .message.bot {
+            align-self: flex-start;
+        }
+        .msg-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .message.bot .msg-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .message.user .msg-avatar {
+            background: #ffd93d;
+            color: #333;
+        }
+        .msg-content {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .message.bot .msg-content {
+            background: #f5f5f5;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        .message.user .msg-content {
+            background: #667eea;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .msg-time {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .message.user .msg-time {
+            text-align: right;
+        }
+        .chat-input-area {
+            padding: 16px 24px;
+            background: #fff;
+            border-top: 1px solid #e0e0e0;
+        }
+        .input-box {
+            display: flex;
+            align-items: center;
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 12px 16px;
+            gap: 12px;
+        }
+        .input-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            color: #333;
+        }
+        .input-box input::placeholder {
+            color: #888;
+        }
+        .input-icon {
+            font-size: 18px;
+            color: #888;
+            cursor: pointer;
+        }
+        .input-icon:hover {
+            color: #667eea;
+        }
+        .send-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            margin-left: 12px;
+        }
+        .send-btn:hover {
+            opacity: 0.9;
+        }
+        /* 右侧会话历史区域 */
+        .history-panel {
+            width: 320px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+        .history-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .history-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1d23;
+        }
+        .history-tabs {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: #f5f5f5;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        .tab:hover:not(.active) {
+            background: #eee;
+        }
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .history-item {
+            padding: 12px 16px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .history-item:hover {
+            background: #e8eaf6;
+        }
+        .history-item.active {
+            background: #e8eaf6;
+            border: 1px solid #667eea;
+        }
+        .history-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .history-agent {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+        }
+        .history-time {
+            font-size: 11px;
+            color: #888;
+        }
+        .history-preview {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .history-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .meta-tag {
+            padding: 4px 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #666;
+        }
+        .meta-tag.online {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+        .meta-tag.test {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <!-- 左侧侧边栏 -->
+    <aside class="sidebar">
+        <div class="system-name" onclick="goHome()">SinoAI Platform</div>
+        
+        <div class="nav-group">
+            <div class="group-title">Agent Studio</div>
+            <div class="nav-item" onclick="goHome('agent')">
+                <span class="nav-icon">🤖</span>
+                <span class="nav-text">Agents</span>
+            </div>
+            <div class="nav-item" onclick="goHome('skill')">
+                <span class="nav-icon">⚡</span>
+                <span class="nav-text">Skills</span>
+            </div>
+            <div class="nav-item" onclick="goHome('tool')">
+                <span class="nav-icon">🔧</span>
+                <span class="nav-text">Tools</span>
+            </div>
+            <div class="nav-item" onclick="goHome('mcp')">
+                <span class="nav-icon">🔗</span>
+                <span class="nav-text">MCPs</span>
+            </div>
+            <div class="nav-item" onclick="goHome('rag')">
+                <span class="nav-icon">📚</span>
+                <span class="nav-text">RAGs</span>
+            </div>
+            <div class="nav-item" onclick="goHome('stats')">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">统计</span>
+            </div>
+        </div>
+        
+        <div class="nav-group">
+            <div class="group-title">Agent Control</div>
+            <div class="nav-item active">
+                <span class="nav-icon">💬</span>
+                <span class="nav-text">会话</span>
+            </div>
+            <div class="nav-item" onclick="goHome('channel')">
+                <span class="nav-icon">📡</span>
+                <span class="nav-text">通道</span>
+            </div>
+            <div class="nav-item" onclick="goHome('memory')">
+                <span class="nav-icon">🧠</span>
+                <span class="nav-text">记忆</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 中部聊天区域 -->
+    <div class="chat-area">
+        <div class="chat-header">
+            <div class="agent-info">
+                <div class="agent-avatar">🤖</div>
+                <div>
+                    <div class="agent-name" id="currentAgent">AI 助手</div>
+                    <div class="agent-status">Dify Chatbot · 运行中</div>
+                </div>
+            </div>
+            <div class="chat-actions">
+                <button class="action-btn">清空对话</button>
+                <button class="action-btn">导出记录</button>
+            </div>
+        </div>
+        
+        <iframe
+            id="chatbotFrame"
+            src=""
+            style="width: 100%; height: 100%; min-height: 700px; flex: 1;"
+            frameborder="0"
+            allow="microphone">
+        </iframe>
+    </div>
+
+    <!-- 右侧会话历史 -->
+    <div class="history-panel">
+        <div class="history-header">
+            <div class="history-title">会话列表</div>
+        </div>
+        <div class="history-list" id="historyList">
+            <!-- History items will be rendered here -->
+        </div>
+    </div>
+
+    <script>
+        // ── 用户标识：生成/获取持久化 user ID，绑定 Dify 对话历史 ──
+        function getDifyUserId() {
+            let uid = localStorage.getItem('dify_user_id');
+            if (!uid) {
+                uid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8); return v.toString(16); });
+                localStorage.setItem('dify_user_id', uid);
+            }
+            return uid;
+        }
+
+        // 从 URL 参数读取 chatbot 配置
+        const urlParams = new URLSearchParams(window.location.search);
+        const botId = urlParams.get('bot') || 'VBfmK4pPwaPkoX1T';
+        const botName = urlParams.get('name') || 'AI 助手';
+
+        // Dify 服务直连地址（用于新标签页打开）
+        const DIFY_BASE = 'http://10.10.9.65';
+
+        // Dify 代理地址：根据运行环境自动选择
+        // 开发环境：Vite dev server (localhost:5173) + 独立代理服务器 (localhost:5174)
+        // 生产环境：Nginx 同一域名下代理（相对路径 /chat/{token}）
+        function getDifyProxyUrl() {
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            
+            // 开发环境判断：Vite 默认端口 5173/5174
+            if (port === '5173' || port === '5174') {
+                return `http://${hostname}:5174`;
+            }
+            // 生产环境：使用相对路径，由 Nginx 代理转发
+            return '';
+        }
+
+        async function initPage() {
+            // 通过反向代理访问 Dify，解决：
+            // 1. X-Frame-Options: DENY 阻止 iframe 嵌入
+            // 2. Dify Next.js 应用的 /_next/、/api/ 等绝对路径资源加载问题
+            const proxyUrl = getDifyProxyUrl();
+            const userId = getDifyUserId();
+            const baseUrl = proxyUrl ? `${proxyUrl}/chat/${botId}` : `/chat/${botId}`;
+            const chatbotUrl = `${baseUrl}?user=${encodeURIComponent(userId)}`;
+            document.getElementById('chatbotFrame').src = chatbotUrl;
+            document.getElementById('currentAgent').textContent = botName;
+            console.log('Loading chatbot from:', chatbotUrl);
+            await loadSessions();
+
+            const frame = document.getElementById('chatbotFrame');
+            frame.onload = function() {
+                console.log('Chatbot iframe loaded successfully');
+            };
+            frame.onerror = function() {
+                console.error('Chatbot iframe failed to load');
+            };
+        }
+        
+        function showLoginPrompt() {
+            // 检查是否已经显示过提示，避免重复显示
+            if (document.getElementById('login-prompt')) {
+                return;
+            }
+            
+            const chatArea = document.querySelector('.chat-area');
+            const prompt = document.createElement('div');
+            prompt.id = 'login-prompt';
+            prompt.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 30px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                text-align: center;
+                z-index: 1000;
+            `;
+            prompt.innerHTML = `
+                <h3 style="margin-bottom: 16px; color: #333;">需要登录 Dify</h3>
+                <p style="margin-bottom: 20px; color: #666; font-size: 14px;">
+                    由于安全策略限制，请在新标签页中登录 Dify 后刷新本页面
+                </p>
+                <button onclick="openDifyLogin()" style="
+                    padding: 10px 24px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">
+                    打开 Dify 登录页面
+                </button>
+            `;
+            chatArea.appendChild(prompt);
+        }
+        
+        function openDifyLogin() {
+            // 通过代理在新标签页打开 Dify 登录页面
+            // 登录后的 Cookie 会保存在代理域名下，iframe 可以直接使用
+            window.open(`${DIFY_PROXY}/chat/${botId}`, '_blank');
+        }
+
+        // ── 动态加载会话列表 ──
+        let sessions = [];
+
+        async function loadSessions() {
+            try {
+                const resp = await fetch('/api/dify/chat-apps');
+                if (!resp.ok) throw new Error('Failed to load sessions');
+                const apps = await resp.json();
+                sessions = apps.map((app, idx) => ({
+                    id: idx + 1,
+                    agent: app.name,
+                    botId: app.access_token,
+                    preview: app.description || app.name,
+                    tag: 'online',
+                }));
+            } catch (err) {
+                console.error('Failed to load session list:', err);
+                sessions = [];
+            }
+            renderSessionList();
+        }
+
+        const currentBotId = botId;
+
+        function renderSessionList() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = sessions.map(item => `
+                <div class="history-item ${item.botId === currentBotId ? 'active' : ''}" onclick="switchBot('${item.botId}', '${item.agent}')">
+                    <div class="history-item-header">
+                        <span class="history-agent">${item.agent}</span>
+                    </div>
+                    <div class="history-preview">${item.preview}</div>
+                    <div class="history-meta">
+                        <span class="meta-tag online">线上</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchBot(id, name) {
+            window.location.href = '/session.html?bot=' + id + '&name=' + encodeURIComponent(name);
+        }
+
+        function goHome(section) {
+            const url = section ? '/?section=' + section : '/';
+            window.location.href = url;
+        }
+
+        // 初始化
+        initPage();
+    </script>
+</body>
+</html>

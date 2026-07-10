@@ -1,0 +1,73 @@
+# ============================================
+# DCloud Market - Docker Compose 编排文件
+# ============================================
+# 使用方式：
+#   构建并启动：docker-compose up -d --build
+#   停止服务：  docker-compose down
+#   查看日志：  docker-compose logs -f
+# ============================================
+
+version: "3.8"
+
+services:
+  # ------------------------------------------
+  # 后端服务 - FastAPI (Python)
+  # ------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: dcloud-market-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      # 数据持久化到宿主机 C:\Data 目录
+      # DB 文件直接放在 C:\Data 根目录
+      - C:/Data/skills.db:/app/data/skills.db
+      # 上传文件存放在 C:\Data\uploads 目录
+      - C:/Data/uploads:/app/uploads
+      # 挂载 config.json（运行时覆盖，无需重建镜像）
+      - ./config/config.json:/config/config.json:ro
+    environment:
+      - DATABASE_URL=sqlite:///./data/skills.db
+    networks:
+      - dcloud-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ------------------------------------------
+  # 前端服务 - Nginx (React SPA)
+  # ------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dcloud-market-frontend
+    restart: unless-stopped
+    ports:
+      # 宿主机 80/8080 端口被占用，改用 9090
+      - "9090:80"
+    environment:
+      # Dify 服务地址，修改此处即可切换环境，无需重建镜像
+      - DIFY_URL=http://10.10.9.65:80
+    volumes:
+      # 挂载配置文件，运行时覆盖 config.json，无需重建镜像
+      - ./config/config.json:/usr/share/nginx/html/config.json:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - dcloud-network
+
+# ------------------------------------------
+# 网络
+# ------------------------------------------
+networks:
+  dcloud-network:
+    driver: bridge
+    name: dcloud-market-network
