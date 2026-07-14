@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine, Base
-from app.routers import skills, dify
+from app.routers import skills, dify, mcp
 
 settings = get_settings()
 
@@ -21,6 +21,7 @@ app.add_middleware(
 # Routers
 app.include_router(skills.router, prefix="/api")
 app.include_router(dify.router, prefix="/api")
+app.include_router(mcp.router, prefix="/api")
 
 
 @app.on_event("startup")

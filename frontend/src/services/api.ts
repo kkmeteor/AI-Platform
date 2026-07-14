@@ -119,3 +119,67 @@ export async function fetchDifyChatApps(): Promise<DifyChatApp[]> {
 export function isAdmin(): boolean {
   return localStorage.getItem('role') === 'admin';
 }
+
+// ── MCP Server ──
+
+export interface McpTool {
+  name: string;
+  description: string;
+  inputSchema?: Record<string, unknown>;
+}
+
+export interface McpServer {
+  id: number;
+  name: string;
+  url: string;
+  transport: string;
+  headers: string;
+  timeout: number;
+  sse_read_timeout: number;
+  is_active: boolean;
+  tools: McpTool[];
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface McpServerCreate {
+  name: string;
+  url: string;
+  transport?: string;
+  headers?: string;
+  timeout?: number;
+  sse_read_timeout?: number;
+}
+
+export interface McpServerUpdate {
+  name?: string;
+  url?: string;
+  transport?: string;
+  headers?: string;
+  timeout?: number;
+  sse_read_timeout?: number;
+}
+
+export async function fetchMcpServers(): Promise<McpServer[]> {
+  const res = await api.get<McpServer[]>('/mcp');
+  return res.data;
+}
+
+export async function createMcpServer(data: McpServerCreate): Promise<McpServer> {
+  const res = await api.post<McpServer>('/mcp', data);
+  return res.data;
+}
+
+export async function updateMcpServer(id: number, data: McpServerUpdate): Promise<McpServer> {
+  const res = await api.put<McpServer>(`/mcp/${id}`, data);
+  return res.data;
+}
+
+export async function deleteMcpServer(id: number): Promise<void> {
+  await api.delete(`/mcp/${id}`);
+}
+
+export async function refreshMcpServer(id: number): Promise<McpServer> {
+  const res = await api.post<McpServer>(`/mcp/${id}/refresh`);
+  return res.data;
+}

@@ -47,7 +47,7 @@ Content-Type: application/json
 
 ### 获取 JWT Token
 
-@csrf_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODM1OTQ2NDMsInN1YiI6ImQ3NGI0YWRlLTc5ODctNDUzMS05ZWI2LTU2OWU1ODE1YWE1MiJ9.iBAfQpc-wbklZP3rEBwryKB79nGE3wzbE4XN6MndfcY
+@csrf_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQwMTY2MDUsInN1YiI6ImQ3NGI0YWRlLTc5ODctNDUzMS05ZWI2LTU2OWU1ODE1YWE1MiJ9.0oheBcZfa297ImNlZa0VdHaWSoUicOu9OW1-iU-w55A
 
 ### 获取应用列表 (登录后 Cookie 自动携带，csrf_token 需通过 login.bat 写入环境变量)
 GET {{baseUrl}}/console/api/apps
@@ -66,4 +66,8 @@ x-csrf-token: {{csrf_token}}
 {
 
 }
+
+###
+GET http://10.10.9.65/console/api/workspaces/current/tool-provider/mcp/tools/27c68c93-2354-4bf0-a093-56d4f5f58a9e
+x-csrf-token: {{csrf_token}}
 

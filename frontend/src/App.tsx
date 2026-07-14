@@ -3,6 +3,7 @@ import { Spin } from 'antd';
 import Sidebar from './components/Sidebar';
 import PlaceholderPage from './components/PlaceholderPage';
 import MarketPlace from './pages/MarketPlace';
+import McpPage from './pages/McpPage';
 import { fetchDifyApps, fetchDifyChatApps } from './services/api';
 import type { DifyApp, DifyAppTag } from './services/api';
 import './App.css';
@@ -60,45 +61,8 @@ const sectionData: Record<string, SectionData> = {
   },
   mcp: {
     title: 'MCP',
-    subtitle: '模型上下文协议配置',
-    cards: [
-      { 
-        icon: '🔗', 
-        color: 'blue', 
-        title: 'tfs-tool', 
-        desc: 'TFS 变更集查询与状态对比工具', 
-        status: 'active', 
-        statusText: '在线', 
-        meta: 'HTTP SSE',
-        config: {
-          "url": "http://10.10.11.194:8808/mcp",
-          "type": "http"
-        },
-        tools: [
-          { name: 'check_tfs_health', description: '检查TFS服务健康状态。' },
-          { name: 'query_changeset_history', description: '查询TFS变更集历史。' },
-          { name: 'compare_with_status', description: '比较源项目和目标项目之间的变更集，自动合并本地状态标记，并筛选出**待处理(Pending)**和**需要合并(NeedMerge)**的变更集。' }
-        ]
-      },
-      { 
-        icon: '🔗', 
-        color: 'blue', 
-        title: 'jenkins-tool', 
-        desc: 'Jenkins MCP, 操作Jenkins', 
-        status: 'active', 
-        statusText: '在线', 
-        meta: 'HTTP SSE',
-        config: {
-          "url": "http://10.10.11.194:9887/mcp",
-          "type": "http"
-        },
-        tools: [
-          { name: 'check_jenkins_health', description: '检查Jenkins服务健康状态。' },
-          { name: 'query_build_history', description: '查询Jenkins构建历史。' },
-          { name: 'trigger_build', description: '触发Jenkins构建。' }
-        ]
-      },
-    ],
+    subtitle: 'Model Context Protocol server configurations',
+    cards: [],  // dynamically loaded via McpPage
   },
   rag: {
     title: 'RAG',
@@ -241,6 +205,10 @@ function App() {
           <PlaceholderPage title={data.title} subtitle={data.subtitle} cards={sessionCards} />
         </Spin>
       );
+    }
+
+    if (activeSection === 'mcp') {
+      return <McpPage />;
     }
 
     const data = sectionData[activeSection];

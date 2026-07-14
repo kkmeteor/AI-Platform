@@ -27,16 +27,39 @@ def migrate_db():
     db_path = DATABASE_URL.replace("sqlite:///", "")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+
+    # --- skills table migrations ---
     cursor.execute("PRAGMA table_info(skills)")
     existing_columns = {row[1] for row in cursor.fetchall()}
 
-    migrations = [
+    skill_migrations = [
         ("is_readonly", "BOOLEAN NOT NULL DEFAULT 0"),
         ("is_pinned", "BOOLEAN NOT NULL DEFAULT 0"),
     ]
-    for col_name, col_type in migrations:
+    for col_name, col_type in skill_migrations:
         if col_name not in existing_columns:
             conn.execute(f"ALTER TABLE skills ADD COLUMN {col_name} {col_type}")
+
+    # --- mcp_servers table creation ---
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='mcp_servers'"
+    )
+    if not cursor.fetchone():
+        conn.execute("""
+            CREATE TABLE mcp_servers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(100) NOT NULL,
+                url VARCHAR(500) NOT NULL,
+                transport VARCHAR(50) DEFAULT 'streamable_http',
+                headers TEXT DEFAULT '{}',
+                timeout INTEGER DEFAULT 60,
+                sse_read_timeout INTEGER DEFAULT 50,
+                is_active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
     conn.commit()
     conn.close()
 

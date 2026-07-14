@@ -1,0 +1,210 @@
+.mcp-page {
+  width: 100%;
+}
+
+.mcp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.mcp-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1a1d23;
+  margin: 0 0 8px 0;
+}
+
+.mcp-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+/* ── Cards Grid ── */
+
+.mcp-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+/* ── Card ── */
+
+.mcp-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.mcp-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Inactive (offline) card — red border */
+.mcp-card.inactive {
+  border-color: #ff4d4f;
+  background: #fff2f0;
+}
+
+.mcp-card.inactive .mcp-status-dot {
+  background: #ff4d4f;
+}
+
+/* ── Card Header ── */
+
+.mcp-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.mcp-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.mcp-icon-active {
+  background: #e3f2fd;
+}
+
+.mcp-icon-inactive {
+  background: #ffebee;
+}
+
+.mcp-card-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.mcp-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1d23;
+  margin-bottom: 2px;
+  word-break: break-all;
+}
+
+.mcp-card-url {
+  font-size: 12px;
+  color: #888;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.mcp-card-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Status ── */
+
+.mcp-card-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.mcp-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mcp-status-active {
+  background: #4caf50;
+}
+
+.mcp-status-inactive {
+  background: #ff4d4f;
+}
+
+.mcp-status-text {
+  font-size: 12px;
+  color: #666;
+}
+
+.mcp-card-transport {
+  margin-left: auto;
+  font-size: 11px;
+  color: #888;
+  background: #f5f5f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* ── Tools Section ── */
+
+.mcp-tools-section {
+  margin-top: 4px;
+}
+
+.mcp-tools-section h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1d23;
+  margin: 0 0 8px 0;
+}
+
+.mcp-tools-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.mcp-tools-section li {
+  margin-bottom: 8px;
+  font-size: 12px;
+  padding: 6px 8px;
+  background: #fafafa;
+  border-radius: 6px;
+}
+
+.mcp-tools-section li strong {
+  display: block;
+  color: #1a1d23;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.mcp-tools-section li p {
+  margin: 0;
+  color: #666;
+  line-height: 1.4;
+  font-size: 11px;
+}
+
+/* ── Empty / Offline Messages ── */
+
+.mcp-no-tools {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  padding: 12px 0;
+}
+
+.mcp-offline-msg {
+  font-size: 12px;
+  color: #ff4d4f;
+  text-align: center;
+  padding: 8px 0;
+  font-weight: 500;
+}

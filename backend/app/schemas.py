@@ -50,3 +50,40 @@ class SkillUpdate(BaseModel):
 class SkillListResponse(BaseModel):
     items: List[SkillResponse]
     total: int
+
+
+# ── MCP Server Schemas ──
+
+class McpServerCreate(BaseModel):
+    name: str
+    url: str
+    transport: str = "streamable_http"
+    headers: Optional[str] = "{}"
+    timeout: int = 60
+    sse_read_timeout: int = 50
+
+
+class McpServerUpdate(BaseModel):
+    name: Optional[str] = None
+    url: Optional[str] = None
+    transport: Optional[str] = None
+    headers: Optional[str] = None
+    timeout: Optional[int] = None
+    sse_read_timeout: Optional[int] = None
+
+
+class McpServerResponse(BaseModel):
+    id: int
+    name: str
+    url: str
+    transport: str
+    headers: str
+    timeout: int
+    sse_read_timeout: int
+    is_active: bool
+    tools: List[dict] = []
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
