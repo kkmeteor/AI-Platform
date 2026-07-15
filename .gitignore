@@ -36,6 +36,7 @@ backend/uploads/*.zip
 # Docker 导出目录（离线部署包）
 # -------------------------------------------
 dcloud-market-deploy/
+dcloud-market-registry-deploy/
 
 # -------------------------------------------
 # 临时目录
