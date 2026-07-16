@@ -1,12 +1,27 @@
+# ============================================
+# Dify API 调试文件
+# ============================================
+# 使用方式：
+#   1. 先运行 login.ps1 获取最新 csrf_token
+#      cd DebugTools && powershell .\login.ps1
+#   2. 在 VS Code 中用 REST Client 插件打开本文件
+#   3. 点击请求上方的 "Send Request" 按钮
+#
+# 注意：
+#   - Console API 需要 csrf_token（由 login.ps1 写入 rest-client.env.json）
+#   - App API 使用 App Token（从 Dify 控制台获取，无需登录）
+# ============================================
+
 @baseUrl = http://10.10.9.65
-@token = app-xc0lJvE8MRE4GiIWUF32eD3t
 
-###请求列表
-
+# ============================================
+# 分区：App API（使用 App Token，无需登录）
+# ============================================
+@appToken = app-xc0lJvE8MRE4GiIWUF32eD3t
 
 ### 调用通用小助理
 POST {{baseUrl}}/v1/chat-messages
-Authorization: Bearer {{token}}
+Authorization: Bearer {{appToken}}
 Content-Type: application/json
 
 {
@@ -22,19 +37,22 @@ Content-Type: application/json
 
 ### 获取应用信息
 GET {{baseUrl}}/v1/info
-Authorization: Bearer {{token}}
+Authorization: Bearer {{appToken}}
 
 ### 获取应用参数
 GET {{baseUrl}}/v1/parameters
-Authorization: Bearer {{token}}
-###
+Authorization: Bearer {{appToken}}
 
 ### 获取应用元数据
 GET {{baseUrl}}/v1/meta
-Authorization: Bearer {{token}}
+Authorization: Bearer {{appToken}}
 
-### POST /console/api/login
-# @name login
+# ============================================
+# 分区：Console API（需要先运行 login.ps1）
+# csrf_token 由 login.ps1 自动写入 rest-client.env.json
+# ============================================
+
+### 登录（手动执行，确认登录成功）
 POST {{baseUrl}}/console/api/login
 Content-Type: application/json
 
@@ -45,29 +63,22 @@ Content-Type: application/json
   "remember_me": true
 }
 
-### 获取 JWT Token
-
-@csrf_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQwMTY2MDUsInN1YiI6ImQ3NGI0YWRlLTc5ODctNDUzMS05ZWI2LTU2OWU1ODE1YWE1MiJ9.0oheBcZfa297ImNlZa0VdHaWSoUicOu9OW1-iU-w55A
-
-### 获取应用列表 (登录后 Cookie 自动携带，csrf_token 需通过 login.bat 写入环境变量)
+### 获取应用列表
 GET {{baseUrl}}/console/api/apps
 x-csrf-token: {{csrf_token}}
 
-### 获取应用详情 (登录后 Cookie 自动携带，csrf_token 需通过 login.bat 写入环境变量)
+### 获取应用详情
+@appId = 5f079734-5179-48d5-aeec-0ffef6e481a7
 GET {{baseUrl}}/console/api/apps/{{appId}}
 x-csrf-token: {{csrf_token}}
 
-### 获取应用列表
-
-@appId = 5f079734-5179-48d5-aeec-0ffef6e481a7
+### 获取应用站点信息
 POST {{baseUrl}}/console/api/apps/{{appId}}/site
 x-csrf-token: {{csrf_token}}
 
 {
-
 }
 
-###
-GET http://10.10.9.65/console/api/workspaces/current/tool-provider/mcp/tools/27c68c93-2354-4bf0-a093-56d4f5f58a9e
+### 获取 MCP 工具列表
+GET {{baseUrl}}/console/api/workspaces/current/tool-provider/mcp/tools/27c68c93-2354-4bf0-a093-56d4f5f58a9e
 x-csrf-token: {{csrf_token}}
-
