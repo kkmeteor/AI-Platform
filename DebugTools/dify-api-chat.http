@@ -2,26 +2,82 @@
 # Dify API 调试文件
 # ============================================
 # 使用方式：
-#   1. 先运行 login.ps1 获取最新 csrf_token
-#      cd DebugTools && powershell .\login.ps1
-#   2. 在 VS Code 中用 REST Client 插件打开本文件
-#   3. 点击请求上方的 "Send Request" 按钮
+#   1. 先执行下方"登录"请求（curl 方式）
+#   2. 从响应头 Set-Cookie 中找到 csrf_token=xxx
+#   3. 将值粘贴到下方 @csrf_token 变量
+#   4. 然后就可以调用 Console API 了
 #
-# 注意：
-#   - Console API 需要 csrf_token（由 login.ps1 写入 rest-client.env.json）
-#   - App API 使用 App Token（从 Dify 控制台获取，无需登录）
+# 注意：登录请求使用 curl 语法是因为 REST Client 原生 HTTP 引擎
+#       与 Dify 后端存在编码兼容问题（400 错误），curl 子进程方式正常。
 # ============================================
 
 @baseUrl = http://10.10.9.65
+# 从登录响应的 Set-Cookie 头中复制 csrf_token= 后面的 JWT 值粘贴到这里
+@csrf_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODQyNjE3MDYsInN1YiI6ImQ3NGI0YWRlLTc5ODctNDUzMS05ZWI2LTU2OWU1ODE1YWE1MiJ9.yNkwen3TeHH5pPFMwlz-zBiUa-vPkk2pbE24nTYifQI
+
+# ============================================
+# 分区：登录（先执行这个）
+# ============================================
+
+### 登录（必须用 curl 方式，原生 HTTP 格式会 400）
+curl 'http://10.10.9.65/console/api/login' \
+  -H 'content-type: application/json' \
+  -H 'Origin: http://10.10.9.65' \
+  --data-raw '{"email":"tengfei.ma@sinounion.com","password":"bWV0MTk4NzQyOX4=","language":"zh-Hans","remember_me":true}' \
+  --insecure
+
+# ============================================
+# 分区：Console API（需要上方粘贴的 csrf_token）
+# ============================================
+
+### 获取应用列表
+GET {{baseUrl}}/console/api/apps
+x-csrf-token: {{csrf_token}}
+
+### 获取应用详情
+@appId = 84e357ca-70be-4ad3-8767-274aab843c4c
+GET {{baseUrl}}/console/api/apps/{{appId}}
+x-csrf-token: {{csrf_token}}
+
+### 获取应用站点信息
+POST {{baseUrl}}/console/api/apps/{{appId}}/site
+x-csrf-token: {{csrf_token}}
+Content-Type: application/json
+
+{
+}
+
+### 获取 MCP 工具列表
+GET {{baseUrl}}/console/api/workspaces/current/tool-provider/mcp/tools/27c68c93-2354-4bf0-a093-56d4f5f58a9e
+x-csrf-token: {{csrf_token}}
+
+### 获取知识库列表
+GET {{baseUrl}}/console/api/datasets?limit=30&include_all=false&keyword=&page=1
+x-csrf-token: {{csrf_token}}
+
+### 获取知识库列表BY APPID
+GET {{baseUrl}}/console/api/datasets?page=1&ids=3708f74c-b599-495b-b08f-ee7e567000e7
+x-csrf-token: {{csrf_token}}
+
+
+### 获取已发布应用详情
+GET {{baseUrl}}/console/api/apps/{{appId}}/workflows/publish
+x-csrf-token: {{csrf_token}}
+
+
+### 获取chat应用详情
+GET {{baseUrl}}/console/api/apps/513157ad-633b-47c1-ac07-4781eb9f2eca
+x-csrf-token: {{csrf_token}}
 
 # ============================================
 # 分区：App API（使用 App Token，无需登录）
 # ============================================
-@appToken = app-xc0lJvE8MRE4GiIWUF32eD3t
+@appToken1 = app-xc0lJvE8MRE4GiIWUF32eD3t
+@appToken = app-F7yD19PJgTUyWScRzVnW57lw
 
 ### 调用通用小助理
 POST {{baseUrl}}/v1/chat-messages
-Authorization: Bearer {{appToken}}
+Authorization: Bearer {{appToken1}}
 Content-Type: application/json
 
 {
@@ -46,39 +102,3 @@ Authorization: Bearer {{appToken}}
 ### 获取应用元数据
 GET {{baseUrl}}/v1/meta
 Authorization: Bearer {{appToken}}
-
-# ============================================
-# 分区：Console API（需要先运行 login.ps1）
-# csrf_token 由 login.ps1 自动写入 rest-client.env.json
-# ============================================
-
-### 登录（手动执行，确认登录成功）
-POST {{baseUrl}}/console/api/login
-Content-Type: application/json
-
-{
-  "email": "tengfei.ma@sinounion.com",
-  "password": "bWV0MTk4NzQyOX4=",
-  "language": "zh-Hans",
-  "remember_me": true
-}
-
-### 获取应用列表
-GET {{baseUrl}}/console/api/apps
-x-csrf-token: {{csrf_token}}
-
-### 获取应用详情
-@appId = 5f079734-5179-48d5-aeec-0ffef6e481a7
-GET {{baseUrl}}/console/api/apps/{{appId}}
-x-csrf-token: {{csrf_token}}
-
-### 获取应用站点信息
-POST {{baseUrl}}/console/api/apps/{{appId}}/site
-x-csrf-token: {{csrf_token}}
-
-{
-}
-
-### 获取 MCP 工具列表
-GET {{baseUrl}}/console/api/workspaces/current/tool-provider/mcp/tools/27c68c93-2354-4bf0-a093-56d4f5f58a9e
-x-csrf-token: {{csrf_token}}

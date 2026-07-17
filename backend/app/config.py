@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     dify_base_url: str = _json_defaults.get("difyUrl", "").rstrip("/")
     dify_email: str = _console.get("email", "")
     dify_password: str = _console.get("password", "")
+    dify_dataset_token: str = _json_defaults.get("difyDatasetToken", "")
 
     # ── Database ──
     database_url: str = f"sqlite:///{PROJECT_ROOT}/skills.db"

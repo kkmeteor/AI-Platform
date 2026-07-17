@@ -144,6 +144,38 @@ async def get_dify_chat_apps():
     return result
 
 
+@router.get("/datasets")
+async def get_dify_datasets():
+    """Proxy: GET /console/api/datasets – returns the Dify knowledge base list."""
+    resp = await _session.request(
+        "GET",
+        "/console/api/datasets",
+        params={"limit": 30, "include_all": "false", "keyword": "", "page": 1},
+    )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+    return resp.json()
+
+
+@router.get("/all-datasets")
+async def get_all_datasets():
+    """Fetch all datasets via Dify public API using Bearer token auth.
+
+    Proxies: GET {dify_base_url}/v1/datasets
+    """
+    cfg = get_settings()
+    if not cfg.dify_dataset_token:
+        raise HTTPException(status_code=500, detail="difyDatasetToken not configured")
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.get(
+            f"{cfg.dify_base_url}/v1/datasets",
+            headers={"Authorization": f"Bearer {cfg.dify_dataset_token}"},
+        )
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+    return resp.json()
+
+
 @router.get("/apps/{app_id}")
 async def get_dify_app_detail(app_id: str):
     """Proxy: GET /console/api/apps/{app_id} – returns Dify app detail.
@@ -152,6 +184,18 @@ async def get_dify_app_detail(app_id: str):
     and ``site.icon`` needed for chat session configuration.
     """
     resp = await _session.request("GET", f"/console/api/apps/{app_id}")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+    return resp.json()
+
+
+@router.get("/apps/{app_id}/workflow/publish")
+async def get_dify_app_workflow(app_id: str):
+    """Proxy: GET /console/api/apps/{app_id}/workflows/publish
+
+    Returns the published workflow graph structure as-is.
+    """
+    resp = await _session.request("GET", f"/console/api/apps/{app_id}/workflows/publish")
     if resp.status_code != 200:
         raise HTTPException(status_code=resp.status_code, detail=resp.text)
     return resp.json()

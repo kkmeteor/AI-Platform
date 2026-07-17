@@ -21,6 +21,7 @@ interface CardData {
   link?: string;
   externalLink?: string;
   knowledgeLinks?: KnowledgeLink[];
+  models?: string[];
   tools?: ToolInfo[];
   config?: Record<string, any>;
 }
@@ -64,6 +65,20 @@ export default function PlaceholderPage({ title, subtitle, cards }: PlaceholderP
             <div className="card-meta">
               <span>{card.meta}</span>
             </div>
+            {card.models && card.models.length > 0 && (
+              <div className="card-models">
+                {card.models.map((model, i) => (
+                  <span key={i} className="model-tag">
+                    <svg className="model-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                      <path d="M2 17l10 5 10-5" />
+                      <path d="M2 12l10 5 10-5" />
+                    </svg>
+                    {model}
+                  </span>
+                ))}
+              </div>
+            )}
             {card.knowledgeLinks && card.knowledgeLinks.length > 0 && (
               <div className="card-knowledge-links">
                 {card.knowledgeLinks.map((kl, i) => (

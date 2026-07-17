@@ -4,7 +4,8 @@ import Sidebar from './components/Sidebar';
 import PlaceholderPage from './components/PlaceholderPage';
 import MarketPlace from './pages/MarketPlace';
 import McpPage from './pages/McpPage';
-import { fetchDifyApps, fetchDifyChatApps } from './services/api';
+import RagPage from './pages/RagPage';
+import { fetchDifyApps, fetchDifyChatApps, fetchDifyAppDetail, fetchDifyAppWorkflow, fetchAllDatasets } from './services/api';
 import type { DifyApp, DifyAppTag } from './services/api';
 import './App.css';
 
@@ -34,6 +35,7 @@ interface CardData {
   link?: string;
   externalLink?: string;
   knowledgeLinks?: KnowledgeLink[];
+  models?: string[];
   tools?: ToolInfo[];
   config?: Record<string, any>;
 }
@@ -67,10 +69,7 @@ const sectionData: Record<string, SectionData> = {
   rag: {
     title: 'RAG',
     subtitle: '检索增强生成配置',
-    cards: [
-      { icon: '📚', color: 'blue', title: 'GBSimulator知识库', desc: 'GBSimulator知识库', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: `${DIFY}/datasets/75538eb8-f35b-49a7-ba4a-c4c099c5776d/documents` },
-      { icon: '📚', color: 'purple', title: 'AI-STUDIO知识库', desc: 'AI-STUDIO知识库', status: 'active', statusText: '已索引', meta: 'Dify Knowledge', externalLink: `${DIFY}/datasets/e7ff5fc1-2d0d-4fdd-8826-a852e8f1e7ad/documents` },
-    ],
+    cards: [],  // dynamically loaded via RagPage
   },
   stats: {
     title: '统计',
@@ -109,6 +108,29 @@ function getInitialSection(): string {
   return params.get('section') || 'skill';
 }
 
+/** Parse workflow graph nodes to extract dataset IDs and model names */
+function parseWorkflowNodes(graph: {
+  nodes?: Array<{
+    data?: {
+      type?: string;
+      dataset_ids?: string[];
+      model?: { name?: string };
+    };
+  }>;
+} | null) {
+  const datasetIds: string[] = [];
+  const models: string[] = [];
+  for (const node of graph?.nodes || []) {
+    const { type, dataset_ids, model } = node.data || {};
+    if (type === 'knowledge-retrieval' && dataset_ids?.length) {
+      datasetIds.push(...dataset_ids);
+    } else if (type === 'llm' && model?.name) {
+      models.push(model.name);
+    }
+  }
+  return { datasetIds: [...new Set(datasetIds)], models };
+}
+
 function App() {
   const [activeSection, setActiveSection] = useState(getInitialSection());
   const [agentCards, setAgentCards] = useState<CardData[]>([]);
@@ -119,29 +141,85 @@ function App() {
   useEffect(() => {
     const loadAgents = async () => {
       try {
+        // Fetch all datasets once for local matching
+        let datasetMap = new Map<string, { id: string; name: string }>();
+        try {
+          const allDs = await fetchAllDatasets();
+          for (const ds of allDs.data || []) {
+            datasetMap.set(ds.id, { id: ds.id, name: ds.name });
+          }
+        } catch {
+          // Ignore dataset list fetch failures
+        }
+
         const res = await fetchDifyApps();
         const filtered = (res.data || []).filter((app: DifyApp) =>
           app.tags?.some((t: DifyAppTag) => t.name === 'online' && t.type === 'app')
         );
         const colors: CardColor[] = ['blue', 'purple', 'green', 'orange'];
-        const cards: CardData[] = filtered.map((app, idx) => ({
-          icon: '🤖',
-          color: colors[idx % colors.length],
-          title: app.name,
-          desc: app.description || 'Dify AI Assistant',
-          status: 'active' as const,
-          statusText: '运行中',
-          meta: 'Dify Chatbot',
-          externalLink: `${DIFY}/app/${app.id}/workflow`,
-        }));
-        // Merge knowledge links for specific apps
-        cards.forEach(card => {
-          if (card.title === 'GBSimulator小助手') {
-            card.knowledgeLinks = [{ label: 'TFS产品文档知识库', url: `${DIFY}/datasets/718c4af9-8947-458d-b3d8-0dd926cbc8ed/documents` }];
-          } else if (card.title === 'AI-STUDIO智能体') {
-            card.knowledgeLinks = [{ label: '会议纪要知识库', url: `${DIFY}/datasets/798fee81-3456-4d1a-be62-00cd1511d8cc/documents` }];
-          }
-        });
+        const cards: CardData[] = await Promise.all(
+          filtered.map(async (app, idx) => {
+            const card: CardData = {
+              icon: '🤖',
+              color: colors[idx % colors.length],
+              title: app.name,
+              desc: app.description || 'Dify AI Assistant',
+              status: 'active' as const,
+              statusText: '运行中',
+              meta: 'Dify Chatbot',
+              externalLink: `${DIFY}/app/${app.id}/workflow`,
+            };
+            // Dynamically load model & knowledge base info
+            try {
+              const appDetail = await fetchDifyAppDetail(app.id);
+              const mode = appDetail?.mode || app.mode;
+
+              if (mode === 'chat' || mode === 'agent-chat') {
+                // Chat mode: get model from model_config.model.name
+                const modelConfig = appDetail?.model_config;
+                const modelName = modelConfig?.model?.name;
+                if (modelName) {
+                  card.models = [modelName];
+                }
+                // Get dataset IDs from model_config.dataset_configs.datasets.datasets
+                const datasets = modelConfig?.dataset_configs?.datasets?.datasets || [];
+                const datasetIds: string[] = datasets
+                  .map((d: any) => d?.dataset?.id)
+                  .filter(Boolean);
+                if (datasetIds.length > 0) {
+                  card.knowledgeLinks = datasetIds
+                    .map((id: string) => {
+                      const ds = datasetMap.get(id);
+                      return ds
+                        ? { label: ds.name, url: `${DIFY}/datasets/${ds.id}/documents` }
+                        : null;
+                    })
+                    .filter((kl): kl is KnowledgeLink => kl !== null);
+                }
+              } else {
+                // Non-chat mode: parse workflow graph nodes
+                const workflow = await fetchDifyAppWorkflow(app.id);
+                const { datasetIds, models } = parseWorkflowNodes(workflow?.graph);
+                if (models.length > 0) {
+                  card.models = models;
+                }
+                if (datasetIds.length > 0) {
+                  card.knowledgeLinks = datasetIds
+                    .map(id => {
+                      const ds = datasetMap.get(id);
+                      return ds
+                        ? { label: ds.name, url: `${DIFY}/datasets/${ds.id}/documents` }
+                        : null;
+                    })
+                    .filter((kl): kl is KnowledgeLink => kl !== null);
+                }
+              }
+            } catch {
+              // Ignore individual app fetch failures
+            }
+            return card;
+          })
+        );
         setAgentCards(cards);
       } catch {
         setAgentCards([]);
@@ -209,6 +287,10 @@ function App() {
 
     if (activeSection === 'mcp') {
       return <McpPage />;
+    }
+
+    if (activeSection === 'rag') {
+      return <RagPage />;
     }
 
     const data = sectionData[activeSection];

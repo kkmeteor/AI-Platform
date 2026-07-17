@@ -1,0 +1,406 @@
+{
+    "id": "2b8a2df6-4884-4ea2-9f6b-e1bc5155a86b",
+    "graph": {
+        "nodes": [
+            {
+                "id": "1782868303472",
+                "type": "custom",
+                "data": {
+                    "variables": [],
+                    "type": "start",
+                    "title": "\u7528\u6237\u8f93\u5165",
+                    "selected": false
+                },
+                "position": {
+                    "x": 55,
+                    "y": 261
+                },
+                "targetPosition": "left",
+                "sourcePosition": "right",
+                "positionAbsolute": {
+                    "x": 55,
+                    "y": 261
+                },
+                "width": 242,
+                "height": 73,
+                "selected": false
+            },
+            {
+                "id": "llm",
+                "type": "custom",
+                "data": {
+                    "model": {
+                        "provider": "langgenius\/tongyi\/tongyi",
+                        "name": "qwen3.7-max",
+                        "mode": "chat",
+                        "completion_params": {
+                            "temperature": 0.5
+                        }
+                    },
+                    "prompt_template": [
+                        {
+                            "role": "system",
+                            "text": "\u4f18\u5148\u57fa\u4e8e\u77e5\u8bc6\u5e93\u68c0\u7d22\u7ed9\u51fa\u7684\u6750\u6599\uff08{{#context#}}\uff09\u8fdb\u884c\u56de\u7b54\uff0c\u53c2\u8003\u4e0a\u4e0b\u6587\u5185\u5bb9\u3002\n\u5982\u679c\u77e5\u8bc6\u5e93\u672a\u68c0\u7d22\u5230\u4efb\u4f55\u5185\u5bb9\uff08\u5373 {{#context#}} \u4e3a\u7a7a\u6216\u65e0\u6709\u6548\u4fe1\u606f\uff09\uff0c\u5219\u56de\u590d\u7528\u6237\uff1a\u672a\u80fd\u4ece\u5df2\u6709\u77e5\u8bc6\u5e93\u68c0\u7d22\u5230\u5185\u5bb9\uff0c\u4ee5\u4e0b\u5185\u5bb9\u6765\u81ea\u4e8e\u7f51\u7edc\u68c0\u7d22\u3002",
+                            "id": "1449f6aa-baad-4f07-b8e6-3634ea85271f"
+                        }
+                    ],
+                    "context": {
+                        "enabled": true,
+                        "variable_selector": [
+                            "1782868308266",
+                            "result"
+                        ]
+                    },
+                    "vision": {
+                        "enabled": false
+                    },
+                    "memory": {
+                        "window": {
+                            "enabled": false,
+                            "size": 10
+                        },
+                        "query_prompt_template": "{{#sys.query#}}\n\n{{#sys.files#}}",
+                        "role_prefix": {
+                            "user": "",
+                            "assistant": ""
+                        }
+                    },
+                    "selected": false,
+                    "type": "llm",
+                    "title": "LLM"
+                },
+                "position": {
+                    "x": 380,
+                    "y": 282
+                },
+                "targetPosition": "left",
+                "sourcePosition": "right",
+                "positionAbsolute": {
+                    "x": 380,
+                    "y": 282
+                },
+                "width": 242,
+                "height": 88,
+                "selected": false
+            },
+            {
+                "id": "answer",
+                "type": "custom",
+                "data": {
+                    "variables": [],
+                    "answer": "{{#llm.text#}}\n{{#1784196109342.text#}}",
+                    "type": "answer",
+                    "title": "\u76f4\u63a5\u56de\u590d",
+                    "selected": true
+                },
+                "position": {
+                    "x": 680,
+                    "y": 282
+                },
+                "targetPosition": "left",
+                "sourcePosition": "right",
+                "positionAbsolute": {
+                    "x": 680,
+                    "y": 282
+                },
+                "width": 242,
+                "height": 103,
+                "selected": true
+            },
+            {
+                "id": "1782868308266",
+                "type": "custom",
+                "data": {
+                    "query_variable_selector": [
+                        "1782868303472",
+                        "sys.query"
+                    ],
+                    "query_attachment_selector": [],
+                    "dataset_ids": [
+                        "e7ff5fc1-2d0d-4fdd-8826-a852e8f1e7ad"
+                    ],
+                    "retrieval_mode": "multiple",
+                    "multiple_retrieval_config": {
+                        "top_k": 4,
+                        "reranking_model": {
+                            "provider": "langgenius\/tongyi\/tongyi",
+                            "model": "qwen3-rerank"
+                        },
+                        "reranking_mode": "reranking_model",
+                        "reranking_enable": true
+                    },
+                    "type": "knowledge-retrieval",
+                    "title": "\u77e5\u8bc6\u68c0\u7d22",
+                    "selected": false
+                },
+                "position": {
+                    "x": 251,
+                    "y": 437
+                },
+                "targetPosition": "left",
+                "sourcePosition": "right",
+                "positionAbsolute": {
+                    "x": 251,
+                    "y": 437
+                },
+                "width": 242,
+                "height": 90,
+                "selected": false
+            },
+            {
+                "id": "1784196095470",
+                "type": "custom",
+                "data": {
+                    "query_variable_selector": [
+                        "1782868303472",
+                        "sys.query"
+                    ],
+                    "query_attachment_selector": [],
+                    "dataset_ids": [
+                        "3708f74c-b599-495b-b08f-ee7e567000e7"
+                    ],
+                    "retrieval_mode": "multiple",
+                    "multiple_retrieval_config": {
+                        "top_k": 4,
+                        "reranking_mode": "reranking_model",
+                        "reranking_model": {
+                            "provider": "langgenius\/tongyi\/tongyi",
+                            "model": "qwen3-rerank"
+                        },
+                        "reranking_enable": true
+                    },
+                    "type": "knowledge-retrieval",
+                    "title": "\u77e5\u8bc6\u68c0\u7d22 2",
+                    "selected": false
+                },
+                "position": {
+                    "x": 251,
+                    "y": 566
+                },
+                "targetPosition": "left",
+                "sourcePosition": "right",
+                "positionAbsolute": {
+                    "x": 251,
+                    "y": 566
+                },
+                "width": 242,
+                "height": 90,
+                "selected": false
+            },
+            {
+                "id": "1784196109342",
+                "type": "custom",
+                "data": {
+                    "model": {
+                        "provider": "langgenius\/tongyi\/tongyi",
+                        "name": "qwen3.7-max",
+                        "mode": "chat",
+                        "completion_params": {
+                            "temperature": 0.7
+                        }
+                    },
+                    "prompt_template": [
+                        {
+                            "role": "system",
+                            "text": "\u4f18\u5148\u57fa\u4e8e\u77e5\u8bc6\u5e93\u68c0\u7d22\u7ed9\u51fa\u7684\u6750\u6599\uff08{{#context#}}\uff09\u8fdb\u884c\u56de\u7b54\uff0c\u53c2\u8003\u4e0a\u4e0b\u6587\u5185\u5bb9\u3002\n\u5982\u679c\u77e5\u8bc6\u5e93\u672a\u68c0\u7d22\u5230\u4efb\u4f55\u5185\u5bb9\uff08\u5373 {{#context#}} \u4e3a\u7a7a\u6216\u65e0\u6709\u6548\u4fe1\u606f\uff09\uff0c\u5219\u56de\u590d\u7528\u6237\uff1a\u672a\u80fd\u4ece\u5df2\u6709\u77e5\u8bc6\u5e93\u68c0\u7d22\u5230\u5185\u5bb9\uff0c\u4ee5\u4e0b\u5185\u5bb9\u6765\u81ea\u4e8e\u7f51\u7edc\u68c0\u7d22\u3002",
+                            "id": "1fcd7220-165e-4166-81df-a6ae07c5e569"
+                        }
+                    ],
+                    "context": {
+                        "enabled": true,
+                        "variable_selector": [
+                            "1784196095470",
+                            "result"
+                        ]
+                    },
+                    "vision": {
+                        "enabled": false
+                    },
+                    "type": "llm",
+                    "title": "LLM 2",
+                    "selected": false
+                },
+                "position": {
+                    "x": 553,
+                    "y": 566
+                },
+                "targetPosition": "left",
+                "sourcePosition": "right",
+                "positionAbsolute": {
+                    "x": 553,
+                    "y": 566
+                },
+                "width": 242,
+                "height": 88,
+                "selected": false
+            }
+        ],
+        "edges": [
+            {
+                "id": "llm-answer",
+                "source": "llm",
+                "sourceHandle": "source",
+                "target": "answer",
+                "targetHandle": "target",
+                "type": "custom",
+                "data": {
+                    "sourceType": "llm",
+                    "targetType": "answer"
+                }
+            },
+            {
+                "id": "1782868303472-source-1782868308266-target",
+                "type": "custom",
+                "source": "1782868303472",
+                "target": "1782868308266",
+                "sourceHandle": "source",
+                "targetHandle": "target",
+                "data": {
+                    "sourceType": "start",
+                    "targetType": "knowledge-retrieval",
+                    "isInLoop": false
+                },
+                "zIndex": 0
+            },
+            {
+                "id": "1782868308266-source-llm-target",
+                "type": "custom",
+                "source": "1782868308266",
+                "target": "llm",
+                "sourceHandle": "source",
+                "targetHandle": "target",
+                "data": {
+                    "sourceType": "knowledge-retrieval",
+                    "targetType": "llm",
+                    "isInLoop": false
+                },
+                "zIndex": 0
+            },
+            {
+                "id": "1782868303472-source-1784196095470-target",
+                "type": "custom",
+                "source": "1782868303472",
+                "sourceHandle": "source",
+                "target": "1784196095470",
+                "targetHandle": "target",
+                "data": {
+                    "sourceType": "start",
+                    "targetType": "knowledge-retrieval",
+                    "isInIteration": false,
+                    "isInLoop": false
+                },
+                "zIndex": 0
+            },
+            {
+                "id": "1784196095470-source-1784196109342-target",
+                "type": "custom",
+                "source": "1784196095470",
+                "sourceHandle": "source",
+                "target": "1784196109342",
+                "targetHandle": "target",
+                "data": {
+                    "sourceType": "knowledge-retrieval",
+                    "targetType": "llm",
+                    "isInIteration": false,
+                    "isInLoop": false
+                },
+                "zIndex": 0
+            },
+            {
+                "id": "1784196109342-source-answer-target",
+                "type": "custom",
+                "source": "1784196109342",
+                "target": "answer",
+                "sourceHandle": "source",
+                "targetHandle": "target",
+                "data": {
+                    "sourceType": "llm",
+                    "targetType": "answer",
+                    "isInLoop": false
+                },
+                "zIndex": 0
+            }
+        ],
+        "viewport": {
+            "x": -140,
+            "y": -232.5,
+            "zoom": 1
+        }
+    },
+    "features": {
+        "opening_statement": "",
+        "suggested_questions": [],
+        "suggested_questions_after_answer": {
+            "enabled": false
+        },
+        "text_to_speech": {
+            "enabled": false,
+            "voice": "",
+            "language": ""
+        },
+        "speech_to_text": {
+            "enabled": false
+        },
+        "retriever_resource": {
+            "enabled": true
+        },
+        "sensitive_word_avoidance": {
+            "enabled": false
+        },
+        "file_upload": {
+            "image": {
+                "enabled": false,
+                "number_limits": 3,
+                "transfer_methods": [
+                    "local_file",
+                    "remote_url"
+                ]
+            },
+            "enabled": false,
+            "allowed_file_types": [
+                "image"
+            ],
+            "allowed_file_extensions": [
+                ".JPG",
+                ".JPEG",
+                ".PNG",
+                ".GIF",
+                ".WEBP",
+                ".SVG"
+            ],
+            "allowed_file_upload_methods": [
+                "local_file",
+                "remote_url"
+            ],
+            "number_limits": 3,
+            "fileUploadConfig": {
+                "file_size_limit": 15,
+                "batch_count_limit": 5,
+                "file_upload_limit": 20,
+                "image_file_size_limit": 10,
+                "video_file_size_limit": 100,
+                "audio_file_size_limit": 50,
+                "workflow_file_upload_limit": 10,
+                "image_file_batch_limit": 10,
+                "single_chunk_attachment_limit": 10,
+                "attachment_image_file_size_limit": 2
+            }
+        }
+    },
+    "hash": "44a2839277438802330a3aea2a9d36aa9b504afc3711401aa142b5452a1a3ac7",
+    "version": "2026-07-16 10:02:21.805044",
+    "marked_name": "",
+    "marked_comment": "",
+    "created_by": {
+        "id": "d74b4ade-7987-4531-9eb6-569e5815aa52",
+        "name": "tengfei.ma",
+        "email": "tengfei.ma@sinounion.com"
+    },
+    "created_at": 1784196141,
+    "updated_by": null,
+    "updated_at": 1784196141,
+    "tool_published": false,
+    "environment_variables": [],
+    "conversation_variables": [],
+    "rag_pipeline_variables": []
+}

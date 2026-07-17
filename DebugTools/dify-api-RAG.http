@@ -8,7 +8,7 @@ GET {{baseUrl}}/datasets
 Authorization: Bearer {{token}}
 
 ### 获取知识库详情
-GET {{baseUrl}}/datasets/a9122fa2-5b21-47e9-a4af-473876433297
+GET {{baseUrl}}/datasets/ca816a09-92a8-4171-acab-d2e9cd41ccd7
 Authorization: Bearer {{token}}
 
 ### 知识库检索

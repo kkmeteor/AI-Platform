@@ -183,3 +183,59 @@ export async function refreshMcpServer(id: number): Promise<McpServer> {
   const res = await api.post<McpServer>(`/mcp/${id}/refresh`);
   return res.data;
 }
+
+// ── Dify Datasets (Knowledge Bases) ──
+
+export interface DifyDataset {
+  id: string;
+  name: string;
+  description: string;
+  permission: string;
+  data_source_type: string;
+  indexing_technique: string;
+  app_count: number;
+  document_count: number;
+  word_count: number;
+  created_by: string;
+  author_name: string;
+  created_at: number;
+  updated_by: string;
+  updated_at: number;
+  embedding_model: string;
+  embedding_model_provider: string;
+}
+
+export interface DifyDatasetsResponse {
+  data: DifyDataset[];
+  has_more: boolean;
+  limit: number;
+  page: number;
+  total: number;
+}
+
+export async function fetchDifyDatasets(): Promise<DifyDatasetsResponse> {
+  const res = await api.get<DifyDatasetsResponse>('/dify/datasets');
+  return res.data;
+}
+
+/**
+ * Fetch all datasets via Dify public API (Bearer token auth).
+ */
+export async function fetchAllDatasets(): Promise<DifyDatasetsResponse> {
+  const res = await api.get<DifyDatasetsResponse>('/dify/all-datasets');
+  return res.data;
+}
+
+// ── Dify App Detail ──
+
+export async function fetchDifyAppDetail(appId: string): Promise<any> {
+  const res = await api.get(`/dify/apps/${appId}`);
+  return res.data;
+}
+
+// ── Dify App Workflow (published) ──
+
+export async function fetchDifyAppWorkflow(appId: string): Promise<any> {
+  const res = await api.get(`/dify/apps/${appId}/workflow/publish`);
+  return res.data;
+}
