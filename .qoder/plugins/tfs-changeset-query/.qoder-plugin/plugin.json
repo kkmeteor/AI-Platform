@@ -1,0 +1,15 @@
+{
+  "name": "tfs-changeset-query",
+  "displayName": "TFS 变更集查询",
+  "version": "0.1.0",
+  "description": "Query TFS changeset history and compare changes between projects using the tfs-tool MCP service.",
+  "descriptionZh": "使用 tfs-tool MCP 服务查询 TFS 变更集历史记录、按条件筛选提交，并比较项目间的待合并变更。",
+  "author": {
+    "name": "SinoAI"
+  },
+  "logo": "./assets/avatar.svg",
+  "keywords": ["qoder-plugin", "tfs", "changeset", "version-control", "merge"],
+  "category": "developer-tools",
+  "tags": ["skill", "mcp", "tfs"],
+  "skills": "./skills/"
+}
