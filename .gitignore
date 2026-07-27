@@ -53,6 +53,7 @@ tfs-changeset-query-temp/
 # IDE 和编辑器
 # -------------------------------------------
 .idea/
+.qoder/skills
 *.suo
 *.ntvs*
 *.njsproj
