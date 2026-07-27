@@ -29,16 +29,20 @@ def migrate_db():
     cursor = conn.cursor()
 
     # --- skills table migrations ---
-    cursor.execute("PRAGMA table_info(skills)")
-    existing_columns = {row[1] for row in cursor.fetchall()}
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='skills'"
+    )
+    if cursor.fetchone():
+        cursor.execute("PRAGMA table_info(skills)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
 
-    skill_migrations = [
-        ("is_readonly", "BOOLEAN NOT NULL DEFAULT 0"),
-        ("is_pinned", "BOOLEAN NOT NULL DEFAULT 0"),
-    ]
-    for col_name, col_type in skill_migrations:
-        if col_name not in existing_columns:
-            conn.execute(f"ALTER TABLE skills ADD COLUMN {col_name} {col_type}")
+        skill_migrations = [
+            ("is_readonly", "BOOLEAN NOT NULL DEFAULT 0"),
+            ("is_pinned", "BOOLEAN NOT NULL DEFAULT 0"),
+        ]
+        for col_name, col_type in skill_migrations:
+            if col_name not in existing_columns:
+                conn.execute(f"ALTER TABLE skills ADD COLUMN {col_name} {col_type}")
 
     # --- mcp_servers table creation ---
     cursor.execute(

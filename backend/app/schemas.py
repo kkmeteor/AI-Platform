@@ -52,7 +52,7 @@ class SkillListResponse(BaseModel):
     total: int
 
 
-# ©¤©¤ MCP Server Schemas ©¤©¤
+# ---- MCP Server Schemas ----
 
 class McpServerCreate(BaseModel):
     name: str
