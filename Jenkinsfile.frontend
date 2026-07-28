@@ -1,6 +1,6 @@
 // ============================================
 // DCloud Market - Frontend Jenkins Pipeline
-// React + Vite + Nginx Docker Build & Push
+// React + Vite + Nginx Docker Build & Push (Windows)
 // ============================================
 
 pipeline {
@@ -11,7 +11,7 @@ pipeline {
         IMAGE_NAME = 'dcloud-market-frontend'
         FULL_IMAGE = "${env.REGISTRY}/${env.IMAGE_NAME}"
         CREDENTIALS_ID = 'docker-registry-credentials'
-        BUILD_CONTEXT = './frontend'
+        BUILD_CONTEXT = '.\\frontend'
     }
 
     parameters {
@@ -53,7 +53,7 @@ pipeline {
                     if (params.PUSH_LATEST) {
                         tags += " -t ${env.FULL_IMAGE}:latest"
                     }
-                    sh "docker build ${tags} -f ${env.BUILD_CONTEXT}/Dockerfile ${env.BUILD_CONTEXT}"
+                    bat "docker build ${tags} -f ${env.BUILD_CONTEXT}\\Dockerfile ${env.BUILD_CONTEXT}"
                 }
             }
         }
@@ -65,25 +65,25 @@ pipeline {
                     usernameVariable: 'REGISTRY_USER',
                     passwordVariable: 'REGISTRY_PASS'
                 )]) {
-                    sh '''
-                        echo "${REGISTRY_PASS}" | docker login "${REGISTRY}" -u "${REGISTRY_USER}" --password-stdin
-                        docker push "${IMAGE_WITH_TAG}"
+                    bat '''
+                        echo %REGISTRY_PASS% | docker login %REGISTRY% -u %REGISTRY_USER% --password-stdin
+                        docker push %IMAGE_WITH_TAG%
                     '''
                     script {
                         if (params.PUSH_LATEST) {
-                            sh 'docker push "${FULL_IMAGE}:latest"'
+                            bat 'docker push %FULL_IMAGE%:latest'
                         }
                     }
-                    sh 'docker logout "${REGISTRY}"'
+                    bat 'docker logout %REGISTRY%'
                 }
             }
         }
 
         stage('Cleanup') {
             steps {
-                sh '''
-                    docker rmi "${IMAGE_WITH_TAG}" 2>/dev/null || true
-                    docker rmi "${FULL_IMAGE}:latest" 2>/dev/null || true
+                bat '''
+                    docker rmi %IMAGE_WITH_TAG% 2>nul || echo cleanup skipped
+                    docker rmi %FULL_IMAGE%:latest 2>nul || echo cleanup skipped
                 '''
             }
         }
