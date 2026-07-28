@@ -10,7 +10,6 @@ pipeline {
         REGISTRY = '10.10.11.194:1000'
         IMAGE_NAME = 'dcloud-market-backend'
         FULL_IMAGE = "${env.REGISTRY}/${env.IMAGE_NAME}"
-        CREDENTIALS_ID = 'docker-registry-credentials'
         BUILD_CONTEXT = '.\\backend'
     }
 
@@ -59,21 +58,11 @@ pipeline {
 
         stage('Push Image') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: "${env.CREDENTIALS_ID}",
-                    usernameVariable: 'REGISTRY_USER',
-                    passwordVariable: 'REGISTRY_PASS'
-                )]) {
-                    bat '''
-                        echo %REGISTRY_PASS% | docker login %REGISTRY% -u %REGISTRY_USER% --password-stdin
-                        docker push %IMAGE_WITH_TAG%
-                    '''
-                    script {
-                        if (params.PUSH_LATEST) {
-                            bat 'docker push %FULL_IMAGE%:latest'
-                        }
+                bat 'docker push %IMAGE_WITH_TAG%'
+                script {
+                    if (params.PUSH_LATEST) {
+                        bat 'docker push %FULL_IMAGE%:latest'
                     }
-                    bat 'docker logout %REGISTRY%'
                 }
             }
         }
