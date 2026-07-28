@@ -71,8 +71,8 @@ pipeline {
                             steps {
                                 checkout scm
                                 bat '''
-                                    docker-compose -f docker-compose.registry.yml stop backend || echo no running service
-                                    docker-compose -f docker-compose.registry.yml rm -f backend || echo no existing container
+                                    docker stop dcloud-market-backend 2>nul || echo no running container
+                                    docker rm -f dcloud-market-backend 2>nul || echo no existing container
                                     docker-compose -f docker-compose.registry.yml pull backend
                                     docker-compose -f docker-compose.registry.yml up -d --remove-orphans backend
                                 '''
@@ -139,8 +139,8 @@ pipeline {
                             steps {
                                 checkout scm
                                 bat '''
-                                    docker-compose -f docker-compose.registry.yml stop frontend || echo no running service
-                                    docker-compose -f docker-compose.registry.yml rm -f frontend || echo no existing container
+                                    docker stop dcloud-market-frontend 2>nul || echo no running container
+                                    docker rm -f dcloud-market-frontend 2>nul || echo no existing container
                                     docker-compose -f docker-compose.registry.yml pull frontend
                                     docker-compose -f docker-compose.registry.yml up -d --remove-orphans frontend
                                 '''
