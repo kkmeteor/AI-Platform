@@ -73,8 +73,8 @@ pipeline {
                                 bat '''
                                     docker stop dcloud-market-backend 2>nul || echo no running container
                                     docker rm -f dcloud-market-backend 2>nul || echo no existing container
-                                    docker-compose -f docker-compose.registry.yml pull backend
-                                    docker-compose -f docker-compose.registry.yml up -d --no-deps --remove-orphans backend
+                                    docker-compose -p dcloud-market -f docker-compose.registry.yml pull backend
+                                    docker-compose -p dcloud-market -f docker-compose.registry.yml up -d --no-deps --remove-orphans backend
                                 '''
                             }
                         }
@@ -141,8 +141,8 @@ pipeline {
                                 bat '''
                                     docker stop dcloud-market-frontend 2>nul || echo no running container
                                     docker rm -f dcloud-market-frontend 2>nul || echo no existing container
-                                    docker-compose -f docker-compose.registry.yml pull frontend
-                                    docker-compose -f docker-compose.registry.yml up -d --no-deps --remove-orphans frontend
+                                    docker-compose -p dcloud-market -f docker-compose.registry.yml pull frontend
+                                    docker-compose -p dcloud-market -f docker-compose.registry.yml up -d --no-deps --remove-orphans frontend
                                 '''
                             }
                         }
@@ -163,7 +163,9 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            node('tengfei-test') {
+                cleanWs()
+            }
         }
         failure {
             echo "Pipeline failed. Check build logs for details."
