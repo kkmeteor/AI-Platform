@@ -4,7 +4,7 @@
 // ============================================
 
 pipeline {
-    agent any
+    agent { label "tengfei-test" }
 
     environment {
         REGISTRY = '10.10.11.194:1000'
