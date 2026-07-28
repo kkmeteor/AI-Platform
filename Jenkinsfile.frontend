@@ -4,7 +4,7 @@
 // ============================================
 
 pipeline {
-    agent any
+    agent none
 
     environment {
         REGISTRY = '10.10.11.194:1000'
@@ -28,12 +28,14 @@ pipeline {
 
     stages {
         stage('Checkout') {
+            agent { label "tengfei-test" }
             steps {
                 checkout scm
             }
         }
 
         stage('Set Image Tag') {
+            agent { label "tengfei-test" }
             steps {
                 script {
                     def tag = params.TAG?.trim() ? params.TAG : "${env.BUILD_NUMBER}"
@@ -45,6 +47,7 @@ pipeline {
         }
 
         stage('Build Image') {
+            agent { label "tengfei-test" }
             steps {
                 script {
                     // Multi-stage build: node (build) + nginx (serve)
@@ -58,6 +61,7 @@ pipeline {
         }
 
         stage('Push Image') {
+            agent { label "tengfei-test" }
             steps {
                 bat 'docker push %IMAGE_WITH_TAG%'
                 script {
@@ -68,7 +72,21 @@ pipeline {
             }
         }
 
+        stage('Deploy') {
+            agent { label "master" }
+            steps {
+                checkout scm
+                echo "Deploying frontend to test environment on master..."
+                bat '''
+                    docker-compose -f docker-compose.registry.yml pull frontend
+                    docker-compose -f docker-compose.registry.yml up -d --remove-orphans frontend
+                '''
+                echo "Frontend deployment completed."
+            }
+        }
+
         stage('Cleanup') {
+            agent { label "tengfei-test" }
             steps {
                 bat '''
                     docker rmi %IMAGE_WITH_TAG% 2>nul || echo cleanup skipped
