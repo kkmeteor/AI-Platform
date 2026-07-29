@@ -29,6 +29,8 @@ services:
       - ./config/config.json:/config/config.json:ro
     environment:
       - DATABASE_URL=sqlite:///./data/skills.db
+      - UPLOAD_DIR=/app/uploads
+      - DATA_DIR=/app/data
     networks:
       - dcloud-network
     healthcheck:
