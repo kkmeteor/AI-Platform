@@ -14,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 复制应用代码
 COPY . .
 
-# 创建数据库目录（uploads 由宿主机 C:\Data\uploads 挂载，无需在镜像中创建）
-RUN mkdir -p data
+# 创建数据库目录和上传目录（uploads 优先使用宿主机 C:\Data\uploads 挂载，此处作为兜底）
+RUN mkdir -p data uploads
 
 # 暴露端口
 EXPOSE 8000
