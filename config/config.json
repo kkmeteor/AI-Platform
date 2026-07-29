@@ -4,5 +4,8 @@
     "email": "tengfei.ma@sinounion.com",
     "password": "bWV0MTk4NzQyOX4="
   },
-  "difyDatasetToken": "dataset-TwggUOKC66ON2sZvjm7KgK3D"
+  "difyDatasetToken": "dataset-TwggUOKC66ON2sZvjm7KgK3D",
+  "databaseUrl": "sqlite:///C:/Data/skills.db",
+  "uploadDir": "C:/Data/uploads",
+  "dataDir": "C:/Data"
 }

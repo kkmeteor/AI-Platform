@@ -21,15 +21,16 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # 数据持久化到宿主机 C:\Data 目录
-      # DB 文件直接放在 C:\Data 根目录
+      # 所有持久化数据统一存放在宿主机 C:\Data 目录
       - C:/Data/skills.db:/app/data/skills.db
-      # 上传文件存放在 C:\Data\uploads 目录
       - C:/Data/uploads:/app/uploads
-      # 挂载 config.json（运行时覆盖，无需重建镜像）
-      - ./config/config.json:/config/config.json:ro
+      # config.json 也统一放在 C:\Data\config\ 下，与数据目录一起管理
+      - C:/Data/config/config.json:/config/config.json:ro
     environment:
+      # 容器内为 Linux 环境，用环境变量覆盖 config.json 中的 Windows 路径
       - DATABASE_URL=sqlite:///./data/skills.db
+      - UPLOAD_DIR=/app/uploads
+      - DATA_DIR=/app/data
     networks:
       - dcloud-network
     healthcheck:
@@ -54,7 +55,7 @@ services:
       - DIFY_URL=http://10.10.9.65:80
     volumes:
       # 挂载配置文件，运行时覆盖 config.json，无需重建镜像
-      - ./config/config.json:/usr/share/nginx/html/config.json:ro
+      - C:/Data/config/config.json:/usr/share/nginx/html/config.json:ro
     depends_on:
       backend:
         condition: service_healthy

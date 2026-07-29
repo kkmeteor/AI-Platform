@@ -4,5 +4,8 @@
     "email": "your-email@example.com",
     "password": "your-base64-encoded-password"
   },
-  "difyDatasetToken": "your-dataset-api-token"
+  "difyDatasetToken": "your-dataset-api-token",
+  "databaseUrl": "sqlite:///C:/Data/skills.db",
+  "uploadDir": "C:/Data/uploads",
+  "dataDir": "C:/Data"
 }

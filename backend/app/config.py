@@ -43,10 +43,12 @@ class Settings(BaseSettings):
     """Application settings.
 
     Env var names are derived from field names by uppercasing, e.g.:
-      - ``dify_base_url`` → ``DIFY_BASE_URL``
-      - ``dify_email``   → ``DIFY_EMAIL``
-      - ``dify_password`` → ``DIFY_PASSWORD``
-      - ``database_url``  → ``DATABASE_URL``
+      - ``dify_base_url``  → ``DIFY_BASE_URL``
+      - ``dify_email``     → ``DIFY_EMAIL``
+      - ``dify_password``  → ``DIFY_PASSWORD``
+      - ``database_url``   → ``DATABASE_URL``
+      - ``upload_dir``     → ``UPLOAD_DIR``
+      - ``data_dir``       → ``DATA_DIR``
 
     Values from ``config/config.json`` serve as defaults and are
     automatically overridden when the corresponding env var is set.
@@ -59,11 +61,17 @@ class Settings(BaseSettings):
     dify_dataset_token: str = _json_defaults.get("difyDatasetToken", "")
 
     # ── Database ──
-    database_url: str = f"sqlite:///{PROJECT_ROOT}/skills.db"
+    database_url: str = _json_defaults.get(
+        "databaseUrl", f"sqlite:///{PROJECT_ROOT}/skills.db"
+    )
 
     # ── File paths ──
-    upload_dir: Path = PROJECT_ROOT / "uploads"
-    data_dir: Path = PROJECT_ROOT / "data"
+    upload_dir: Path = Path(
+        _json_defaults.get("uploadDir", str(PROJECT_ROOT / "uploads"))
+    )
+    data_dir: Path = Path(
+        _json_defaults.get("dataDir", str(PROJECT_ROOT / "data"))
+    )
 
     model_config = {"extra": "ignore"}
 
