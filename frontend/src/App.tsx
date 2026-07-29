@@ -6,7 +6,8 @@ import MarketPlace from './pages/MarketPlace';
 import McpPage from './pages/McpPage';
 import RagPage from './pages/RagPage';
 import PortalPage from './pages/PortalPage';
-import { fetchDifyApps, fetchDifyChatApps, fetchDifyAppDetail, fetchDifyAppWorkflow, fetchAllDatasets } from './services/api';
+import SessionPage from './pages/SessionPage';
+import { fetchDifyApps, fetchDifyAppDetail, fetchDifyAppWorkflow, fetchAllDatasets } from './services/api';
 import type { DifyApp, DifyAppTag } from './services/api';
 import './App.css';
 
@@ -136,8 +137,6 @@ function App() {
   const [activeSection, setActiveSection] = useState(getInitialSection());
   const [agentCards, setAgentCards] = useState<CardData[]>([]);
   const [agentLoading, setAgentLoading] = useState(true);
-  const [sessionCards, setSessionCards] = useState<CardData[]>([]);
-  const [sessionLoading, setSessionLoading] = useState(true);
 
   useEffect(() => {
     const loadAgents = async () => {
@@ -231,31 +230,6 @@ function App() {
     loadAgents();
   }, []);
 
-  useEffect(() => {
-    const loadSessionCards = async () => {
-      try {
-        const apps = await fetchDifyChatApps();
-        const colors: CardColor[] = ['blue', 'purple', 'green', 'orange'];
-        const cards: CardData[] = apps.map((app, idx) => ({
-          icon: app.icon || '💬',
-          color: colors[idx % colors.length],
-          title: app.name,
-          desc: app.description || 'Dify Chatbot',
-          status: 'active' as const,
-          statusText: '运行中',
-          meta: 'Dify Chatbot',
-          link: `/session.html?bot=${app.access_token}&name=${encodeURIComponent(app.name)}`,
-        }));
-        setSessionCards(cards);
-      } catch {
-        setSessionCards([]);
-      } finally {
-        setSessionLoading(false);
-      }
-    };
-    loadSessionCards();
-  }, []);
-
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
     const url = new URL(window.location.href);
@@ -282,12 +256,7 @@ function App() {
     }
 
     if (activeSection === 'session') {
-      const data = sectionData[activeSection];
-      return (
-        <Spin spinning={sessionLoading}>
-          <PlaceholderPage title={data.title} subtitle={data.subtitle} cards={sessionCards} />
-        </Spin>
-      );
+      return <SessionPage />;
     }
 
     if (activeSection === 'mcp') {

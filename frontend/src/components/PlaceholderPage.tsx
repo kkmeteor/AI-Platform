@@ -31,9 +31,10 @@ interface PlaceholderPageProps {
   subtitle: string;
   cards: CardData[];
   showNotImplemented?: boolean;
+  onCardClick?: (card: CardData) => void;
 }
 
-export default function PlaceholderPage({ title, subtitle, cards, showNotImplemented }: PlaceholderPageProps) {
+export default function PlaceholderPage({ title, subtitle, cards, showNotImplemented, onCardClick }: PlaceholderPageProps) {
   return (
     <div className="placeholder-page">
       {showNotImplemented && (
@@ -52,11 +53,13 @@ export default function PlaceholderPage({ title, subtitle, cards, showNotImpleme
             key={index}
             className="placeholder-card"
             onClick={
-              card.externalLink
-                ? () => window.open(card.externalLink, '_blank', 'noopener,noreferrer')
-                : card.link
-                  ? () => { window.location.href = card.link!; }
-                  : undefined
+              onCardClick
+                ? () => onCardClick(card)
+                : card.externalLink
+                  ? () => window.open(card.externalLink, '_blank', 'noopener,noreferrer')
+                  : card.link
+                    ? () => { window.location.href = card.link!; }
+                    : undefined
             }
           >
             <div className="card-header">

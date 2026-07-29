@@ -1,0 +1,239 @@
+.session-page {
+  display: flex;
+  width: calc(100% + 96px);
+  height: 100dvh;
+  gap: 0;
+  margin: -40px -48px;
+  /* Offset main-content padding so chat fills the full area */
+}
+
+/* ── Chat Area ── */
+.session-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-default);
+  min-width: 0;
+}
+
+.session-chat-header {
+  padding: 16px 24px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.session-agent-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.session-agent-avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--accent-light);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.session-agent-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.session-agent-status {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.session-chat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.session-chat-iframe {
+  width: 100%;
+  flex: 1;
+  border: none;
+}
+
+.session-chat-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  gap: 12px;
+}
+
+.session-chat-empty-icon {
+  font-size: 48px;
+  opacity: 0.4;
+}
+
+.session-chat-empty-text {
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+/* ── Session List Panel ── */
+.session-list-panel {
+  width: 300px;
+  min-width: 300px;
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.session-list-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.session-list-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.session-list-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.session-list-empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.session-list-item {
+  padding: 12px 14px;
+  background: var(--bg-base);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition);
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.session-list-item:hover {
+  background: var(--bg-muted);
+  border-color: var(--border-default);
+}
+
+.session-list-item.active {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+.session-list-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-list-item-icon {
+  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-muted);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.session-list-item.active .session-list-item-icon {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.session-list-item-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.session-list-item-preview {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 32px;
+}
+
+.session-list-item-meta {
+  display: flex;
+  gap: 6px;
+  padding-left: 32px;
+}
+
+.session-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.session-tag.online {
+  background: #dcfce7;
+  color: var(--status-active);
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .session-list-panel {
+    width: 240px;
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .session-page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .session-chat {
+    border-right: none;
+    border-bottom: 1px solid var(--border-default);
+    min-height: 500px;
+  }
+
+  .session-list-panel {
+    width: 100%;
+    min-width: 100%;
+    max-height: 300px;
+  }
+}
