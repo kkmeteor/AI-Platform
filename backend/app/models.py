@@ -22,6 +22,22 @@ class Skill(Base):
     updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
 
 
+class PortalLink(Base):
+    __tablename__ = "portal_links"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    url = Column(String(500), nullable=False)
+    icon = Column(String(50), default="🔗")
+    description = Column(String(200), nullable=True)
+    background_image = Column(String(500), nullable=True)
+    category = Column(String(50), default="custom")
+    sort_order = Column(Integer, default=0)
+    is_builtin = Column(Boolean, default=False, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+    updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+
+
 class McpServer(Base):
     __tablename__ = "mcp_servers"
 

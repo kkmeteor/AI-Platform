@@ -239,3 +239,68 @@ export async function fetchDifyAppWorkflow(appId: string): Promise<any> {
   const res = await api.get(`/dify/apps/${appId}/workflow/publish`);
   return res.data;
 }
+
+// ── Portal Links ──
+
+export interface PortalLink {
+  id: number;
+  name: string;
+  url: string;
+  icon: string;
+  description: string | null;
+  background_image: string | null;
+  category: string;
+  sort_order: number;
+  is_builtin: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface PortalLinkCreate {
+  name: string;
+  url: string;
+  icon?: string;
+  description?: string;
+  background_image?: string;
+}
+
+export interface PortalLinkUpdate {
+  name?: string;
+  url?: string;
+  icon?: string;
+  description?: string;
+  background_image?: string;
+}
+
+export async function fetchPortalLinks(): Promise<PortalLink[]> {
+  const res = await api.get<PortalLink[]>('/portal/links');
+  return res.data;
+}
+
+export async function createPortalLink(data: PortalLinkCreate): Promise<PortalLink> {
+  const res = await api.post<PortalLink>('/portal/links', data);
+  return res.data;
+}
+
+export async function updatePortalLink(id: number, data: PortalLinkUpdate): Promise<PortalLink> {
+  const res = await api.put<PortalLink>(`/portal/links/${id}`, data);
+  return res.data;
+}
+
+export async function deletePortalLink(id: number): Promise<void> {
+  await api.delete(`/portal/links/${id}`);
+}
+
+export async function uploadPortalBackground(linkId: number, file: File): Promise<PortalLink> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await api.post<PortalLink>(`/portal/links/${linkId}/background`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+}
+
+export async function deletePortalBackground(linkId: number): Promise<PortalLink> {
+  const res = await api.delete<PortalLink>(`/portal/links/${linkId}/background`);
+  return res.data;
+}

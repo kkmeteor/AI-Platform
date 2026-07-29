@@ -6,6 +6,7 @@ import UploadModal from '../components/UploadModal';
 import SkillDetailModal from '../components/SkillDetailModal';
 import { fetchSkills } from '../services/api';
 import type { Skill } from '../services/api';
+import './MarketPlace.css';
 
 export default function MarketPlace() {
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -51,43 +52,32 @@ export default function MarketPlace() {
   };
 
   return (
-    <div style={{ padding: '0' }}>
+    <div className="marketplace-page">
       {/* Page header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, color: '#1a1d23', margin: '0 0 8px 0' }}>Skills</h1>
-        <p style={{ fontSize: 14, color: '#666', margin: 0 }}>管理和配置您的 Skill 插件</p>
+      <div className="marketplace-header">
+        <h1 className="marketplace-title">Skills</h1>
+        <p className="marketplace-subtitle">管理和配置您的 Skill 插件</p>
       </div>
 
       {/* Header with search and upload */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          marginBottom: 24,
-          flexWrap: 'wrap',
-          gap: 16,
-        }}
-      >
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <Input.Search
-            placeholder="搜索 Skills..."
-            allowClear
-            enterButton={<SearchOutlined />}
-            size="large"
-            style={{ width: 320 }}
-            onSearch={handleSearch}
-            onChange={(e) => handleSearchChange(e.target.value)}
-          />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            size="large"
-            onClick={() => setUploadOpen(true)}
-          >
-            上传
-          </Button>
-        </div>
+      <div className="marketplace-toolbar">
+        <Input.Search
+          placeholder="搜索 Skills..."
+          allowClear
+          enterButton={<SearchOutlined />}
+          size="large"
+          style={{ width: 320 }}
+          onSearch={handleSearch}
+          onChange={(e) => handleSearchChange(e.target.value)}
+        />
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          size="large"
+          onClick={() => setUploadOpen(true)}
+        >
+          上传
+        </Button>
       </div>
 
       {/* Content */}
@@ -107,7 +97,7 @@ export default function MarketPlace() {
 
       {/* Pagination */}
       {total > pageSize && (
-        <div style={{ textAlign: 'center', marginTop: 32 }}>
+        <div className="marketplace-pagination">
           <Pagination
             current={page}
             total={total}

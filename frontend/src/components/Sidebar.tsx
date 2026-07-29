@@ -2,7 +2,7 @@ import './Sidebar.css';
 
 interface NavItem {
   key: string;
-  icon: string;
+  icon: React.ReactNode;
   label: string;
 }
 
@@ -16,24 +16,39 @@ interface SidebarProps {
   onSectionChange: (section: string) => void;
 }
 
+/* Minimal stroke icons — 1.5px weight, 20×20 viewport */
+const icons = {
+  portal: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>,
+  agent: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>,
+  skill: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+  tool: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
+  mcp: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
+  rag: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>,
+  stats: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>,
+  session: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  channel: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.4"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.4"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>,
+  memory: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>,
+};
+
 const navGroups: NavGroup[] = [
   {
-    title: 'Agent Studio',
+    title: 'Studio',
     items: [
-      { key: 'agent', icon: '🤖', label: 'Agents' },
-      { key: 'skill', icon: '⚡', label: 'Skills' },
-      { key: 'tool', icon: '🔧', label: 'Tools' },
-      { key: 'mcp', icon: '🔗', label: 'MCPs' },
-      { key: 'rag', icon: '📚', label: 'RAGs' },
-      { key: 'stats', icon: '📊', label: '统计' },
+      { key: 'portal', icon: icons.portal, label: '门户' },
+      { key: 'agent', icon: icons.agent, label: 'Agents' },
+      { key: 'skill', icon: icons.skill, label: 'Skills' },
+      { key: 'tool', icon: icons.tool, label: 'Tools' },
+      { key: 'mcp', icon: icons.mcp, label: 'MCPs' },
+      { key: 'rag', icon: icons.rag, label: 'RAGs' },
+      { key: 'stats', icon: icons.stats, label: '统计' },
     ],
   },
   {
-    title: 'Agent Control',
+    title: 'Control',
     items: [
-      { key: 'session', icon: '💬', label: '会话' },
-      { key: 'channel', icon: '📡', label: '通道' },
-      { key: 'memory', icon: '🧠', label: '记忆' },
+      { key: 'session', icon: icons.session, label: '会话' },
+      { key: 'channel', icon: icons.channel, label: '通道' },
+      { key: 'memory', icon: icons.memory, label: '记忆' },
     ],
   },
 ];

@@ -5,6 +5,7 @@ import PlaceholderPage from './components/PlaceholderPage';
 import MarketPlace from './pages/MarketPlace';
 import McpPage from './pages/McpPage';
 import RagPage from './pages/RagPage';
+import PortalPage from './pages/PortalPage';
 import { fetchDifyApps, fetchDifyChatApps, fetchDifyAppDetail, fetchDifyAppWorkflow, fetchAllDatasets } from './services/api';
 import type { DifyApp, DifyAppTag } from './services/api';
 import './App.css';
@@ -105,7 +106,7 @@ const sectionData: Record<string, SectionData> = {
 
 function getInitialSection(): string {
   const params = new URLSearchParams(window.location.search);
-  return params.get('section') || 'skill';
+  return params.get('section') || 'portal';
 }
 
 /** Parse workflow graph nodes to extract dataset IDs and model names */
@@ -263,6 +264,10 @@ function App() {
   };
 
   const renderContent = () => {
+    if (activeSection === 'portal') {
+      return <PortalPage />;
+    }
+
     if (activeSection === 'skill') {
       return <MarketPlace />;
     }

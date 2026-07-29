@@ -11,6 +11,7 @@ import {
 import dayjs from 'dayjs';
 import type { Skill } from '../services/api';
 import { getDownloadUrl, deleteSkill, togglePinSkill, isAdmin } from '../services/api';
+import './SkillCard.css';
 
 const { Text, Paragraph } = Typography;
 
@@ -57,14 +58,8 @@ export default function SkillCard({ skill, onRefresh, onClick }: SkillCardProps)
   return (
     <Card
       hoverable
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        border: skill.is_pinned ? '1px solid #1677ff' : undefined,
-      }}
-      styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column' } }}
+      className={`skill-card ${skill.is_pinned ? 'skill-card-pinned' : ''}`}
+      styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: '20px' } }}
       onClick={() => onClick(skill)}
     >
       {/* Pin icon - top right, admin only */}
@@ -73,37 +68,37 @@ export default function SkillCard({ skill, onRefresh, onClick }: SkillCardProps)
           <Button
             type="text"
             size="small"
-            icon={skill.is_pinned ? <PushpinFilled style={{ color: '#1677ff' }} /> : <PushpinOutlined />}
+            icon={skill.is_pinned ? <PushpinFilled style={{ color: 'var(--accent)' }} /> : <PushpinOutlined />}
             onClick={handleTogglePin}
-            style={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
+            className="skill-card-pin"
           />
         </Tooltip>
       )}
 
-      <div style={{ flex: 1 }}>
-        <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 8, paddingRight: admin ? 32 : 0 }}>
+      <div className="skill-card-body">
+        <Typography.Title level={5} className="skill-card-title">
           {skill.name}
         </Typography.Title>
 
         <Paragraph
           ellipsis={{ rows: 2, expandable: false }}
           type="secondary"
-          style={{ marginBottom: 12, minHeight: 44 }}
+          className="skill-card-desc"
         >
           {skill.description}
         </Paragraph>
 
         {skill.tags && skill.tags.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
+          <div className="skill-card-tags">
             {skill.tags.map((tag) => (
-              <Tag key={tag} color="blue">
+              <Tag key={tag} color="default" className="skill-tag">
                 {tag}
               </Tag>
             ))}
           </div>
         )}
 
-        <Space orientation="vertical" size={4} style={{ width: '100%' }}>
+        <Space orientation="vertical" size={4} className="skill-card-meta">
           <Text type="secondary">
             <UserOutlined /> {skill.author || 'Unknown'}
           </Text>
@@ -116,8 +111,8 @@ export default function SkillCard({ skill, onRefresh, onClick }: SkillCardProps)
         </Space>
       </div>
 
-      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Tag color="green">v{skill.version}</Tag>
+      <div className="skill-card-footer">
+        <Tag color="default" className="skill-version-tag">v{skill.version}</Tag>
         <Space>
           <Button
             type="primary"

@@ -6,19 +6,20 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .mcp-title {
-  font-size: 28px;
-  font-weight: 600;
-  color: #1a1d23;
-  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 650;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.03em;
 }
 
 .mcp-subtitle {
   font-size: 14px;
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -27,32 +28,32 @@
 .mcp-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 20px;
+  gap: 16px;
 }
 
 /* ── Card ── */
 
 .mcp-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 2px solid transparent;
-  transition: all 0.2s;
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  border: 1px solid var(--border-default);
+  transition: all var(--transition);
 }
 
 .mcp-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Inactive (offline) card — red border */
+/* Inactive (offline) card */
 .mcp-card.inactive {
-  border-color: #ff4d4f;
-  background: #fff2f0;
+  border-color: #fecaca;
+  background: #fef2f2;
 }
 
 .mcp-card.inactive .mcp-status-dot {
-  background: #ff4d4f;
+  background: var(--status-error);
 }
 
 /* ── Card Header ── */
@@ -61,26 +62,26 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .mcp-card-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 17px;
   flex-shrink: 0;
 }
 
 .mcp-icon-active {
-  background: #e3f2fd;
+  background: var(--accent-light);
 }
 
 .mcp-icon-inactive {
-  background: #ffebee;
+  background: #fee2e2;
 }
 
 .mcp-card-header-text {
@@ -89,18 +90,20 @@
 }
 
 .mcp-card-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1a1d23;
+  color: var(--text-primary);
   margin-bottom: 2px;
   word-break: break-all;
+  letter-spacing: -0.01em;
 }
 
 .mcp-card-url {
   font-size: 12px;
-  color: #888;
+  color: var(--text-tertiary);
   word-break: break-all;
   line-height: 1.4;
+  font-family: var(--font-mono);
 }
 
 .mcp-card-actions {
@@ -114,39 +117,41 @@
 .mcp-card-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  gap: 7px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .mcp-status-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
 .mcp-status-active {
-  background: #4caf50;
+  background: var(--status-active);
 }
 
 .mcp-status-inactive {
-  background: #ff4d4f;
+  background: var(--status-error);
 }
 
 .mcp-status-text {
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
+  font-weight: 450;
 }
 
 .mcp-card-transport {
   margin-left: auto;
   font-size: 11px;
-  color: #888;
-  background: #f5f5f5;
+  color: var(--text-tertiary);
+  background: var(--bg-muted);
   padding: 2px 8px;
   border-radius: 4px;
+  font-family: var(--font-mono);
 }
 
 /* ── Tools Section ── */
@@ -156,10 +161,12 @@
 }
 
 .mcp-tools-section h4 {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
-  color: #1a1d23;
+  color: var(--text-tertiary);
   margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .mcp-tools-section ul {
@@ -171,24 +178,25 @@
 }
 
 .mcp-tools-section li {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-size: 12px;
-  padding: 6px 8px;
-  background: #fafafa;
-  border-radius: 6px;
+  padding: 8px 10px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-sm);
 }
 
 .mcp-tools-section li strong {
   display: block;
-  color: #1a1d23;
+  color: var(--text-primary);
   font-size: 12px;
   margin-bottom: 2px;
+  font-weight: 550;
 }
 
 .mcp-tools-section li p {
   margin: 0;
-  color: #666;
-  line-height: 1.4;
+  color: var(--text-secondary);
+  line-height: 1.5;
   font-size: 11px;
 }
 
@@ -196,15 +204,15 @@
 
 .mcp-no-tools {
   font-size: 12px;
-  color: #999;
+  color: var(--text-tertiary);
   text-align: center;
-  padding: 12px 0;
+  padding: 14px 0;
 }
 
 .mcp-offline-msg {
   font-size: 12px;
-  color: #ff4d4f;
+  color: var(--status-error);
   text-align: center;
-  padding: 8px 0;
+  padding: 10px 0;
   font-weight: 500;
 }

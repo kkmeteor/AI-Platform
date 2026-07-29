@@ -43,6 +43,41 @@ class SkillResponse(BaseModel):
         return []
 
 
+# ---- Portal Link Schemas ----
+
+class PortalLinkCreate(BaseModel):
+    name: str
+    url: str
+    icon: Optional[str] = "🔗"
+    description: Optional[str] = None
+    background_image: Optional[str] = None
+
+
+class PortalLinkUpdate(BaseModel):
+    name: Optional[str] = None
+    url: Optional[str] = None
+    icon: Optional[str] = None
+    description: Optional[str] = None
+    background_image: Optional[str] = None
+
+
+class PortalLinkResponse(BaseModel):
+    id: int
+    name: str
+    url: str
+    icon: Optional[str] = "🔗"
+    description: Optional[str] = None
+    background_image: Optional[str] = None
+    category: Optional[str] = "custom"
+    sort_order: int = 0
+    is_builtin: bool = False
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 class SkillUpdate(BaseModel):
     is_pinned: Optional[bool] = None
 

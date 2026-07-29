@@ -1,4 +1,39 @@
-/* Global layout */
+/* ── Design Tokens ── */
+:root {
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  --bg-base: #fafaf9;
+  --bg-surface: #ffffff;
+  --bg-muted: #f5f5f4;
+
+  --text-primary: #1c1917;
+  --text-secondary: #57534e;
+  --text-tertiary: #a8a29e;
+
+  --border-default: #e7e5e4;
+  --border-subtle: #f0efee;
+
+  --accent: #0d9488;
+  --accent-light: #ccfbf1;
+  --accent-dark: #0f766e;
+
+  --status-active: #16a34a;
+  --status-inactive: #d97706;
+  --status-error: #dc2626;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-md: 0 4px 12px rgba(28, 25, 23, 0.06);
+  --shadow-lg: 0 8px 24px rgba(28, 25, 23, 0.08);
+
+  --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Reset ── */
 * {
   margin: 0;
   padding: 0;
@@ -6,37 +41,71 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  height: 100vh;
+  font-family: var(--font-sans);
+  height: 100dvh;
   display: flex;
-  background: #f0f2f5;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   display: flex;
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
 }
 
 .app-layout {
   display: flex;
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
 }
 
 .main-content {
   flex: 1;
-  padding: 32px;
+  padding: 40px 48px;
   overflow-y: auto;
-  background: #f0f2f5;
+  background: var(--bg-base);
+  max-width: 1440px;
 }
 
-/* Ant Design overrides */
+/* ── Ant Design Overrides ── */
 .ant-card {
-  border-radius: 8px;
+  border-radius: var(--radius-md);
+  border-color: var(--border-default);
 }
 
 .ant-card-hoverable:hover {
   transform: translateY(-2px);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.ant-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.ant-btn-primary:hover {
+  background: var(--accent-dark) !important;
+  border-color: var(--accent-dark) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }

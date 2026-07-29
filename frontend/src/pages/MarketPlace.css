@@ -1,0 +1,35 @@
+.marketplace-page {
+  width: 100%;
+}
+
+.marketplace-header {
+  margin-bottom: 32px;
+}
+
+.marketplace-title {
+  font-size: 24px;
+  font-weight: 650;
+  color: var(--text-primary);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.03em;
+}
+
+.marketplace-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.marketplace-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.marketplace-pagination {
+  text-align: center;
+  margin-top: 36px;
+}
