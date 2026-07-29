@@ -1,5 +1,21 @@
 .placeholder-page {
   width: 100%;
+  position: relative;
+}
+
+.not-implemented-banner {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+  z-index: 10;
+  letter-spacing: 0.02em;
 }
 
 .content-header {

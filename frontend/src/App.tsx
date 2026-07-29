@@ -300,7 +300,8 @@ function App() {
 
     const data = sectionData[activeSection];
     if (data) {
-      return <PlaceholderPage title={data.title} subtitle={data.subtitle} cards={data.cards} />;
+      const showNotImplemented = ['tool', 'stats', 'channel', 'memory'].includes(activeSection);
+      return <PlaceholderPage title={data.title} subtitle={data.subtitle} cards={data.cards} showNotImplemented={showNotImplemented} />;
     }
 
     return <PlaceholderPage title="未知页签" subtitle="该页签暂未实现" cards={[]} />;

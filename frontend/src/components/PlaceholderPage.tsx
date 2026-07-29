@@ -30,11 +30,17 @@ interface PlaceholderPageProps {
   title: string;
   subtitle: string;
   cards: CardData[];
+  showNotImplemented?: boolean;
 }
 
-export default function PlaceholderPage({ title, subtitle, cards }: PlaceholderPageProps) {
+export default function PlaceholderPage({ title, subtitle, cards, showNotImplemented }: PlaceholderPageProps) {
   return (
     <div className="placeholder-page">
+      {showNotImplemented && (
+        <div className="not-implemented-banner">
+          功能正在开发中，敬请期待！
+        </div>
+      )}
       <div className="content-header">
         <h1 className="content-title">{title}</h1>
         <p className="content-subtitle">{subtitle}</p>
