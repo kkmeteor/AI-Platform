@@ -32,21 +32,21 @@ const icons = {
 
 const navGroups: NavGroup[] = [
   {
-    title: 'Studio',
+    title: 'Online',
     items: [
       { key: 'portal', icon: icons.portal, label: '门户' },
       { key: 'session', icon: icons.session, label: 'Agent 会话' },
       { key: 'agent', icon: icons.agent, label: 'Agent 编排' },
       { key: 'skill', icon: icons.skill, label: 'Skills' },
-      { key: 'tool', icon: icons.tool, label: 'Tools' },
       { key: 'mcp', icon: icons.mcp, label: 'MCPs' },
       { key: 'rag', icon: icons.rag, label: 'RAGs' },
-      { key: 'stats', icon: icons.stats, label: '统计' },
     ],
   },
   {
-    title: 'Control',
+    title: 'Offline',
     items: [
+      { key: 'tool', icon: icons.tool, label: 'Tools' },
+      { key: 'stats', icon: icons.stats, label: '统计' },
       { key: 'channel', icon: icons.channel, label: '通道' },
       { key: 'memory', icon: icons.memory, label: '记忆' },
     ],
