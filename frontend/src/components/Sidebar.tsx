@@ -35,7 +35,8 @@ const navGroups: NavGroup[] = [
     title: 'Studio',
     items: [
       { key: 'portal', icon: icons.portal, label: '门户' },
-      { key: 'agent', icon: icons.agent, label: 'Agents' },
+      { key: 'session', icon: icons.session, label: 'Agent 会话' },
+      { key: 'agent', icon: icons.agent, label: 'Agent 编排' },
       { key: 'skill', icon: icons.skill, label: 'Skills' },
       { key: 'tool', icon: icons.tool, label: 'Tools' },
       { key: 'mcp', icon: icons.mcp, label: 'MCPs' },
@@ -46,7 +47,6 @@ const navGroups: NavGroup[] = [
   {
     title: 'Control',
     items: [
-      { key: 'session', icon: icons.session, label: '会话' },
       { key: 'channel', icon: icons.channel, label: '通道' },
       { key: 'memory', icon: icons.memory, label: '记忆' },
     ],

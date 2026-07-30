@@ -50,7 +50,7 @@ interface SectionData {
 
 const sectionData: Record<string, SectionData> = {
   agent: {
-    title: 'Agent',
+    title: 'Agent 编排',
     subtitle: '管理和配置您的智能代理',
     cards: [],
   },
@@ -83,7 +83,7 @@ const sectionData: Record<string, SectionData> = {
     ],
   },
   session: {
-    title: '会话',
+    title: 'Agent 会话',
     subtitle: '管理和查看Agent会话记录',
     cards: [],  // dynamically loaded via useEffect
   },
