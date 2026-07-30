@@ -71,6 +71,8 @@ pipeline {
                             steps {
                                 checkout scm
                                 bat '''
+                                    if not exist "C:/Data/config" mkdir "C:/Data/config"
+                                    copy /Y "config\config.json" "C:/Data/config/config.json"
                                     docker stop dcloud-market-backend 2>nul || echo no running container
                                     docker rm -f dcloud-market-backend 2>nul || echo no existing container
                                     docker-compose -p dcloud-market -f docker-compose.registry.yml pull backend
@@ -139,6 +141,8 @@ pipeline {
                             steps {
                                 checkout scm
                                 bat '''
+                                    if not exist "C:/Data/config" mkdir "C:/Data/config"
+                                    copy /Y "config\config.json" "C:/Data/config/config.json"
                                     docker stop dcloud-market-frontend 2>nul || echo no running container
                                     docker rm -f dcloud-market-frontend 2>nul || echo no existing container
                                     docker-compose -p dcloud-market -f docker-compose.registry.yml pull frontend
