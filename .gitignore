@@ -54,6 +54,8 @@ tfs-changeset-query-temp/
 # -------------------------------------------
 .idea/
 .qoder/skills
+.qoder/settings.json
+.qoder/plans
 *.suo
 *.ntvs*
 *.njsproj
