@@ -5,12 +5,30 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// Automatically attach X-User-Role header from localStorage
+// Automatically attach JWT token from localStorage
 api.interceptors.request.use((config) => {
-  const role = localStorage.getItem('role') || 'user';
-  config.headers['X-User-Role'] = role;
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
   return config;
 });
+
+// Handle 401 responses - clear token and redirect to login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Redirect to login page if not already there
+      if (!window.location.search.includes('section=login')) {
+        window.location.href = '/?section=login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export interface Skill {
   id: number;
@@ -118,6 +136,92 @@ export async function fetchDifyChatApps(): Promise<DifyChatApp[]> {
 
 export function isAdmin(): boolean {
   return localStorage.getItem('role') === 'admin';
+}
+
+export function canEdit(): boolean {
+  const role = localStorage.getItem('role');
+  return role === 'admin' || role === 'editor';
+}
+
+// ── Auth ──
+
+export interface UserInfo {
+  id: number;
+  username: string;
+  display_name: string | null;
+  email: string | null;
+  role: string;
+  is_active: boolean;
+  last_login_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: UserInfo;
+}
+
+export async function login(data: LoginRequest): Promise<LoginResponse> {
+  const res = await api.post<LoginResponse>('/auth/login', data);
+  return res.data;
+}
+
+export async function logout(): Promise<void> {
+  await api.post('/auth/logout');
+}
+
+export async function fetchCurrentUser(): Promise<UserInfo> {
+  const res = await api.get<UserInfo>('/auth/me');
+  return res.data;
+}
+
+// ── User Management ──
+
+export interface UserListResponse {
+  items: UserInfo[];
+  total: number;
+}
+
+export interface LoginLog {
+  id: number;
+  user_id: number | null;
+  username: string;
+  login_time: string | null;
+  ip_address: string | null;
+  success: boolean;
+  message: string | null;
+}
+
+export interface LoginLogListResponse {
+  items: LoginLog[];
+  total: number;
+}
+
+export async function fetchUsers(params: { search?: string; page?: number; page_size?: number } = {}): Promise<UserListResponse> {
+  const res = await api.get<UserListResponse>('/users', { params });
+  return res.data;
+}
+
+export async function updateUserRole(userId: number, role: string): Promise<UserInfo> {
+  const res = await api.put<UserInfo>(`/users/${userId}/role`, { role });
+  return res.data;
+}
+
+export async function updateUserStatus(userId: number, isActive: boolean): Promise<UserInfo> {
+  const res = await api.put<UserInfo>(`/users/${userId}/status`, { is_active: isActive });
+  return res.data;
+}
+
+export async function fetchLoginLogs(params: { username?: string; success?: boolean; page?: number; page_size?: number } = {}): Promise<LoginLogListResponse> {
+  const res = await api.get<LoginLogListResponse>('/users/login-logs', { params });
+  return res.data;
 }
 
 // ── MCP Server ──

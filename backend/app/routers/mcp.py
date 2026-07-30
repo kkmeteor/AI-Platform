@@ -11,11 +11,12 @@ import logging
 from typing import List
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.auth import require_role
 from app.database import get_db
-from app.models import McpServer
+from app.models import McpServer, User
 from app.schemas import (
     McpServerCreate,
     McpServerResponse,
@@ -30,13 +31,6 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def require_admin(request: Request):
-    """Raise 403 when the caller is not an admin."""
-    role = request.headers.get("X-User-Role", "").strip().lower()
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Admin permission required")
-
 
 async def _discover_tools(server: McpServer) -> tuple[bool, list[dict]]:
     """
@@ -177,6 +171,7 @@ async def list_mcp_servers(db: Session = Depends(get_db)):
 async def create_mcp_server(
     payload: McpServerCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
 ):
     """Register a new MCP server configuration."""
     server = McpServer(
@@ -205,6 +200,7 @@ async def update_mcp_server(
     server_id: int,
     payload: McpServerUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
 ):
     """Update an existing MCP server configuration."""
     server = db.query(McpServer).filter(McpServer.id == server_id).first()
@@ -230,11 +226,10 @@ async def update_mcp_server(
 @router.delete("/mcp/{server_id}")
 def delete_mcp_server(
     server_id: int,
-    request: Request,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
 ):
-    """Delete an MCP server (admin only)."""
-    require_admin(request)
+    """Delete an MCP server (editor+ only)."""
 
     server = db.query(McpServer).filter(McpServer.id == server_id).first()
     if not server:

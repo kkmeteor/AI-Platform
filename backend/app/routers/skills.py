@@ -9,8 +9,9 @@ from fastapi.responses import FileResponse
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.auth import require_role
 from app.database import get_db
-from app.models import Skill
+from app.models import Skill, User
 from app.schemas import SkillCreate, SkillResponse, SkillListResponse, SkillUpdate
 
 from app.config import get_settings
@@ -18,13 +19,6 @@ from app.config import get_settings
 router = APIRouter()
 
 settings = get_settings()
-
-
-def require_admin(request: Request):
-    """Check X-User-Role header, raise 403 if not admin."""
-    role = request.headers.get("X-User-Role", "").strip().lower()
-    if role != "admin":
-        raise HTTPException(status_code=403, detail="Admin permission required")
 
 
 @router.get("/skills", response_model=SkillListResponse)
@@ -65,14 +59,12 @@ def get_skill(skill_id: int, db: Session = Depends(get_db)):
 
 @router.post("/skills", response_model=SkillResponse)
 async def create_skill(
-    request: Request,
     payload: SkillCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
 ):
-    # 调试日志：打印请求头和请求体
-    logging.error(f"=== Request Content-Type: {request.headers.get('content-type')} ===")
-    body = await request.body()
-    logging.error(f"=== Request body ({len(body)} bytes): {body[:500]} ===")
+    # 调试日志：打印请求体
+    logging.error(f"=== Request body ({len(payload.file_base64)} chars base64) ===")
     # 验证文件为 .zip
     if not payload.file_name or not payload.file_name.lower().endswith(".zip"):
         raise HTTPException(status_code=400, detail="Only .zip files are allowed")
@@ -136,11 +128,10 @@ def download_skill(skill_id: int, db: Session = Depends(get_db)):
 @router.patch("/skills/{skill_id}/pin", response_model=SkillResponse)
 def toggle_pin_skill(
     skill_id: int,
-    request: Request,
     payload: SkillUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
 ):
-    require_admin(request)
     skill = db.query(Skill).filter(Skill.id == skill_id).first()
     if not skill:
         raise HTTPException(status_code=404, detail="Skill not found")
@@ -155,10 +146,9 @@ def toggle_pin_skill(
 @router.delete("/skills/{skill_id}")
 def delete_skill(
     skill_id: int,
-    request: Request,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
 ):
-    require_admin(request)
     skill = db.query(Skill).filter(Skill.id == skill_id).first()
     if not skill:
         raise HTTPException(status_code=404, detail="Skill not found")

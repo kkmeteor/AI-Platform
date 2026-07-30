@@ -122,3 +122,66 @@ class McpServerResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ---- User Schemas ----
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    display_name: Optional[str] = None
+    email: Optional[str] = None
+    role: str = "viewer"
+    is_active: bool = True
+    last_login_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserListResponse(BaseModel):
+    items: List[UserResponse]
+    total: int
+
+
+class UserRoleUpdate(BaseModel):
+    role: str
+
+
+class UserStatusUpdate(BaseModel):
+    is_active: bool
+
+
+# ---- Login Log Schemas ----
+
+class LoginLogResponse(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    username: str
+    login_time: Optional[datetime] = None
+    ip_address: Optional[str] = None
+    success: bool = True
+    message: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class LoginLogListResponse(BaseModel):
+    items: List[LoginLogResponse]
+    total: int
+
+
+# ---- Auth Schemas ----
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse

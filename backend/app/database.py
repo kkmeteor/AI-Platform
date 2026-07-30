@@ -64,6 +64,44 @@ def migrate_db():
             )
         """)
 
+    # --- users table creation ---
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
+    )
+    if not cursor.fetchone():
+        conn.execute("""
+            CREATE TABLE users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                display_name VARCHAR(100),
+                email VARCHAR(200),
+                role VARCHAR(20) NOT NULL DEFAULT 'viewer',
+                is_active BOOLEAN NOT NULL DEFAULT 1,
+                last_login_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("CREATE INDEX ix_users_username ON users (username)")
+
+    # --- login_logs table creation ---
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='login_logs'"
+    )
+    if not cursor.fetchone():
+        conn.execute("""
+            CREATE TABLE login_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                username VARCHAR(50) NOT NULL,
+                login_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                ip_address VARCHAR(50),
+                success BOOLEAN NOT NULL DEFAULT 1,
+                message VARCHAR(200),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        """)
+
     conn.commit()
     conn.close()
 

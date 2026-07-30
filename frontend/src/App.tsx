@@ -7,6 +7,9 @@ import McpPage from './pages/McpPage';
 import RagPage from './pages/RagPage';
 import PortalPage from './pages/PortalPage';
 import SessionPage from './pages/SessionPage';
+import LoginPage from './pages/LoginPage';
+import UserManagePage from './pages/UserManagePage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchDifyApps, fetchDifyAppDetail, fetchDifyAppWorkflow, fetchAllDatasets } from './services/api';
 import type { DifyApp, DifyAppTag } from './services/api';
 import './App.css';
@@ -133,7 +136,8 @@ function parseWorkflowNodes(graph: {
   return { datasetIds: [...new Set(datasetIds)], models };
 }
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const [activeSection, setActiveSection] = useState(getInitialSection());
   const [agentCards, setAgentCards] = useState<CardData[]>([]);
   const [agentLoading, setAgentLoading] = useState(true);
@@ -237,6 +241,25 @@ function App() {
     window.history.replaceState({}, '', url.toString());
   };
 
+  // Show loading spinner while checking auth
+  if (isLoading) {
+    return (
+      <div className="app-layout" style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  // Show login page if section is 'login'
+  if (activeSection === 'login') {
+    return <LoginPage />;
+  }
+
   const renderContent = () => {
     if (activeSection === 'portal') {
       return <PortalPage />;
@@ -267,6 +290,10 @@ function App() {
       return <RagPage />;
     }
 
+    if (activeSection === 'users' && isAdmin) {
+      return <UserManagePage />;
+    }
+
     const data = sectionData[activeSection];
     if (data) {
       const showNotImplemented = ['tool', 'stats', 'channel', 'memory'].includes(activeSection);
@@ -283,6 +310,14 @@ function App() {
         {renderContent()}
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

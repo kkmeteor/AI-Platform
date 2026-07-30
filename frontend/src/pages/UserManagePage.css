@@ -1,0 +1,29 @@
+.user-manage-page {
+  max-width: 1200px;
+}
+
+.user-manage-page .page-header {
+  margin-bottom: 24px;
+}
+
+.user-manage-page .page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.user-manage-page .page-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.list-toolbar {
+  margin-bottom: 16px;
+}
+
+.user-list .ant-table,
+.login-logs .ant-table {
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+}

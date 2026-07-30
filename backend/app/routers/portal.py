@@ -6,9 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
+from app.auth import require_role
 from app.config import get_settings
 from app.database import get_db
-from app.models import PortalLink
+from app.models import PortalLink, User
 from app.schemas import PortalLinkCreate, PortalLinkUpdate, PortalLinkResponse
 
 router = APIRouter()
@@ -29,7 +30,11 @@ def list_portal_links(db: Session = Depends(get_db)):
 
 
 @router.post("/portal/links", response_model=PortalLinkResponse)
-def create_portal_link(payload: PortalLinkCreate, db: Session = Depends(get_db)):
+def create_portal_link(
+    payload: PortalLinkCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
     """Add a custom portal link."""
     max_order = db.query(PortalLink).order_by(PortalLink.sort_order.desc()).first()
     next_order = (max_order.sort_order + 1) if max_order else 0
@@ -48,7 +53,12 @@ def create_portal_link(payload: PortalLinkCreate, db: Session = Depends(get_db))
 
 
 @router.put("/portal/links/{link_id}", response_model=PortalLinkResponse)
-def update_portal_link(link_id: int, payload: PortalLinkUpdate, db: Session = Depends(get_db)):
+def update_portal_link(
+    link_id: int,
+    payload: PortalLinkUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
     """Update a custom portal link."""
     link = db.query(PortalLink).filter(PortalLink.id == link_id).first()
     if not link:
@@ -65,7 +75,12 @@ def update_portal_link(link_id: int, payload: PortalLinkUpdate, db: Session = De
 
 
 @router.post("/portal/links/{link_id}/background", response_model=PortalLinkResponse)
-async def upload_background(link_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_background(
+    link_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
     """Upload a background image for a portal link."""
     link = db.query(PortalLink).filter(PortalLink.id == link_id).first()
     if not link:
@@ -103,7 +118,11 @@ def get_background(filename: str):
 
 
 @router.delete("/portal/links/{link_id}/background", response_model=PortalLinkResponse)
-def delete_background(link_id: int, db: Session = Depends(get_db)):
+def delete_background(
+    link_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
     """Remove the background image from a portal link."""
     link = db.query(PortalLink).filter(PortalLink.id == link_id).first()
     if not link:
@@ -123,7 +142,11 @@ def delete_background(link_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/portal/links/{link_id}")
-def delete_portal_link(link_id: int, db: Session = Depends(get_db)):
+def delete_portal_link(
+    link_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
     """Delete a custom portal link. Builtin links cannot be deleted."""
     link = db.query(PortalLink).filter(PortalLink.id == link_id).first()
     if not link:

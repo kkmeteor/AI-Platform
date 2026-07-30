@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, TIMESTAMP
+from sqlalchemy import Column, Integer, String, Text, Boolean, TIMESTAMP, ForeignKey
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -51,3 +51,29 @@ class McpServer(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
     updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(50), unique=True, nullable=False, index=True)
+    display_name = Column(String(100), nullable=True)
+    email = Column(String(200), nullable=True)
+    role = Column(String(20), default="viewer", nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    last_login_at = Column(TIMESTAMP, nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+    updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+
+
+class LoginLog(Base):
+    __tablename__ = "login_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    username = Column(String(50), nullable=False)
+    login_time = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+    ip_address = Column(String(50), nullable=True)
+    success = Column(Boolean, default=True, nullable=False)
+    message = Column(String(200), nullable=True)

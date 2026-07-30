@@ -7,5 +7,15 @@
   "difyDatasetToken": "dataset-TwggUOKC66ON2sZvjm7KgK3D",
   "databaseUrl": "sqlite:///C:/Data/skills.db",
   "uploadDir": "C:/Data/uploads",
-  "dataDir": "C:/Data"
+  "dataDir": "C:/Data",
+  "ldap": {
+    "server": "sinogram.cn",
+    "port": 389,
+    "useSsl": false,
+    "domain": "sinogram",
+    "baseDn": "CN=%s,OU=User,OU=Beijing,DC=sinogram,DC=cn",
+    "userPrefix": "sinogram\\"
+  },
+  "jwtSecretKey": "change-me-to-a-random-secret",
+  "jwtExpireHours": 8
 }

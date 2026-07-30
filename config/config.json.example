@@ -7,5 +7,15 @@
   "difyDatasetToken": "your-dataset-api-token",
   "databaseUrl": "sqlite:///C:/Data/skills.db",
   "uploadDir": "C:/Data/uploads",
-  "dataDir": "C:/Data"
+  "dataDir": "C:/Data",
+  "ldap": {
+    "server": "ldap://your-domain-controller",
+    "port": 389,
+    "useSsl": false,
+    "domain": "YOURDOMAIN",
+    "baseDn": "DC=yourdomain,DC=com",
+    "userPrefix": "YOURDOMAIN\\"
+  },
+  "jwtSecretKey": "change-me-to-a-random-secret",
+  "jwtExpireHours": 8
 }

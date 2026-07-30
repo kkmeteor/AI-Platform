@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine, Base, get_db
-from app.routers import skills, dify, mcp, portal
+from app.routers import skills, dify, mcp, portal, auth, users
 
 settings = get_settings()
 
@@ -23,6 +23,8 @@ app.include_router(skills.router, prefix="/api")
 app.include_router(dify.router, prefix="/api")
 app.include_router(mcp.router, prefix="/api")
 app.include_router(portal.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
 
 
 @app.on_event("startup")

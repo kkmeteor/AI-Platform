@@ -73,6 +73,19 @@ class Settings(BaseSettings):
         _json_defaults.get("dataDir", str(PROJECT_ROOT / "data"))
     )
 
+    # ── LDAP / Active Directory ──
+    ldap_server: str = _json_defaults.get("ldap", {}).get("server", "")
+    ldap_port: int = _json_defaults.get("ldap", {}).get("port", 389)
+    ldap_use_ssl: bool = _json_defaults.get("ldap", {}).get("useSsl", False)
+    ldap_domain: str = _json_defaults.get("ldap", {}).get("domain", "")
+    ldap_base_dn: str = _json_defaults.get("ldap", {}).get("baseDn", "")
+    ldap_user_prefix: str = _json_defaults.get("ldap", {}).get("userPrefix", "")
+
+    # ── JWT ──
+    jwt_secret_key: str = _json_defaults.get("jwtSecretKey", "change-me-in-production")
+    jwt_algorithm: str = "HS256"
+    jwt_expire_hours: int = _json_defaults.get("jwtExpireHours", 8)
+
     model_config = {"extra": "ignore"}
 
 
