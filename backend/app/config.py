@@ -13,10 +13,13 @@ Usage:
 """
 
 import json
+import logging
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Project root — computed once at module load
@@ -27,13 +30,22 @@ _CONFIG_JSON = PROJECT_ROOT.parent / "config" / "config.json"
 
 def _load_json() -> dict:
     if not _CONFIG_JSON.exists():
+        logger.warning("config.json not found at %s", _CONFIG_JSON)
         return {}
+    logger.info("Loading config from %s", _CONFIG_JSON)
     with open(_CONFIG_JSON, encoding="utf-8") as f:
         return json.load(f)
 
 
 _json_defaults = _load_json()
 _console = _json_defaults.get("difyConsole", {})
+
+# Startup diagnostic: log key config sources for troubleshooting
+if _json_defaults:
+    _ldap_server = _json_defaults.get("ldap", {}).get("server", "")
+    logger.info("Config loaded – ldap.server='%s', difyUrl='%s'", _ldap_server, _json_defaults.get("difyUrl", ""))
+else:
+    logger.warning("config.json is empty or missing – LDAP and other settings will fall back to env vars / defaults")
 
 
 # ---------------------------------------------------------------------------
