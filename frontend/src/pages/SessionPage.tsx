@@ -116,8 +116,8 @@ export default function SessionPage() {
           <h3 className="session-list-title">会话列表</h3>
         </div>
 
-        <Spin spinning={loading}>
-          <div className="session-list-body">
+        <div className="session-list-body">
+          <Spin spinning={loading}>
             {apps.length === 0 && !loading ? (
               <div className="session-list-empty">
                 <p>暂无可用会话</p>
@@ -142,8 +142,8 @@ export default function SessionPage() {
                 </div>
               ))
             )}
-          </div>
-        </Spin>
+          </Spin>
+        </div>
       </div>
     </div>
   );
