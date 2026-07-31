@@ -306,7 +306,7 @@ function AppContent() {
   return (
     <div className="app-layout">
       <Sidebar activeSection={activeSection} onSectionChange={handleSectionChange} />
-      <main className="main-content">
+      <main className={`main-content${activeSection === 'session' ? ' no-scroll' : ''}`}>
         {renderContent()}
       </main>
     </div>
