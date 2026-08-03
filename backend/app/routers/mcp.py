@@ -6,6 +6,7 @@ dynamically discovers available tools by probing each server
 via the MCP JSON-RPC protocol (streamable_http transport).
 """
 
+import asyncio
 import json
 import logging
 from typing import List
@@ -32,7 +33,7 @@ router = APIRouter()
 # Helpers
 # ---------------------------------------------------------------------------
 
-async def _discover_tools(server: McpServer) -> tuple[bool, list[dict]]:
+async def _discover_tools(server: McpServer, timeout_seconds: float = 5.0) -> tuple[bool, list[dict]]:
     """
     Connect to an MCP server and retrieve its tool list.
 
@@ -45,7 +46,9 @@ async def _discover_tools(server: McpServer) -> tuple[bool, list[dict]]:
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
         })
-        timeout = httpx.Timeout(server.timeout, read=server.sse_read_timeout)
+        # Use the shorter of configured timeout and timeout_seconds for probing
+        connect_timeout = min(timeout_seconds, server.timeout or timeout_seconds)
+        timeout = httpx.Timeout(connect_timeout, read=timeout_seconds)
 
         async with httpx.AsyncClient(timeout=timeout) as client:
             # Step 1: initialize
@@ -153,17 +156,24 @@ def _server_to_response(server: McpServer, tools: list[dict] | None = None) -> M
 
 @router.get("/mcp", response_model=List[McpServerResponse])
 async def list_mcp_servers(db: Session = Depends(get_db)):
-    """List all MCP servers with their tools (probed in real-time)."""
+    """List all MCP servers with cached status (no live probing)."""
+    servers = db.query(McpServer).order_by(McpServer.created_at.desc()).all()
+    return [_server_to_response(s) for s in servers]
+
+
+@router.get("/mcp/status", response_model=List[McpServerResponse])
+async def probe_mcp_servers_status(db: Session = Depends(get_db)):
+    """Probe all MCP servers concurrently and return live status with tools."""
     servers = db.query(McpServer).order_by(McpServer.created_at.desc()).all()
 
-    results = []
-    for server in servers:
-        is_active, tools = await _discover_tools(server)
-        server.is_active = is_active
+    async def _probe_one(srv: McpServer):
+        is_active, tools = await _discover_tools(srv, timeout_seconds=5.0)
+        srv.is_active = is_active
         db.commit()
-        db.refresh(server)
-        results.append(_server_to_response(server, tools))
+        db.refresh(srv)
+        return _server_to_response(srv, tools)
 
+    results = await asyncio.gather(*[_probe_one(s) for s in servers])
     return results
 
 

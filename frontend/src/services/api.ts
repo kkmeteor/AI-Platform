@@ -269,6 +269,11 @@ export async function fetchMcpServers(): Promise<McpServer[]> {
   return res.data;
 }
 
+export async function fetchMcpServersStatus(): Promise<McpServer[]> {
+  const res = await api.get<McpServer[]>('/mcp/status', { timeout: 30000 });
+  return res.data;
+}
+
 export async function createMcpServer(data: McpServerCreate): Promise<McpServer> {
   const res = await api.post<McpServer>('/mcp', data);
   return res.data;
