@@ -1,4 +1,4 @@
-# SinoAI Platform
+# XXAI Platform
 
 企业级 AI 技能市场与智能体管理平台，提供技能发布、AI 应用集成、MCP 工具接入等一站式能力。
 
