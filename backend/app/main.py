@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,6 +8,15 @@ from app.database import engine, Base, get_db
 from app.routers import skills, dify, mcp, portal, auth, users
 
 settings = get_settings()
+
+# ---------------------------------------------------------------------------
+# Logging — include timestamp for Docker log output
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 app = FastAPI(title="DCloud Market API", version="1.0.0")
 

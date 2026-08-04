@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button, Spin, Empty, Popconfirm, message, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
-import { fetchMcpServers, deleteMcpServer, refreshMcpServer, isAdmin } from '../services/api';
+import { fetchMcpServers, fetchMcpServersStatus, deleteMcpServer, refreshMcpServer, isAdmin } from '../services/api';
 import type { McpServer } from '../services/api';
 import McpModal from '../components/McpModal';
 import './McpPage.css';
@@ -13,7 +13,10 @@ export default function McpPage() {
   const [editingServer, setEditingServer] = useState<McpServer | null>(null);
   const [refreshingIds, setRefreshingIds] = useState<Set<number>>(new Set());
 
-  const loadData = useCallback(async () => {
+  const [probing, setProbing] = useState(false);
+
+  // Step 1: Load server configs from DB (fast, no probing)
+  const loadServers = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchMcpServers();
@@ -26,9 +29,25 @@ export default function McpPage() {
     }
   }, []);
 
+  // Step 2: Probe all servers concurrently for live status (delayed)
+  const probeStatus = useCallback(async () => {
+    setProbing(true);
+    try {
+      const data = await fetchMcpServersStatus();
+      setServers(data);
+    } catch {
+      // Silently fail — keep cached status shown on cards
+    } finally {
+      setProbing(false);
+    }
+  }, []);
+
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadServers().then(() => {
+      // Delay status probe so cards render first
+      setTimeout(() => probeStatus(), 300);
+    });
+  }, [loadServers, probeStatus]);
 
   const handleAdd = () => {
     setEditingServer(null);
@@ -44,7 +63,7 @@ export default function McpPage() {
     try {
       await deleteMcpServer(id);
       message.success('MCP Server deleted');
-      loadData();
+      loadServers();
     } catch {
       message.error('Delete failed');
     }
@@ -55,7 +74,7 @@ export default function McpPage() {
     try {
       await refreshMcpServer(id);
       message.success('Refreshed');
-      loadData();
+      probeStatus();
     } catch {
       message.error('Refresh failed');
     } finally {
@@ -81,6 +100,14 @@ export default function McpPage() {
           Add
         </Button>
       </div>
+
+      {/* Probing indicator */}
+      {probing && (
+        <div className="mcp-probing-bar">
+          <Spin size="small" />
+          <span>Detecting server status...</span>
+        </div>
+      )}
 
       {/* Content */}
       <Spin spinning={loading}>
@@ -178,7 +205,7 @@ export default function McpPage() {
         open={modalOpen}
         server={editingServer}
         onClose={() => setModalOpen(false)}
-        onSuccess={loadData}
+        onSuccess={() => { loadServers(); probeStatus(); }}
       />
     </div>
   );

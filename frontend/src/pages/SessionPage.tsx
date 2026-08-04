@@ -4,8 +4,21 @@ import { fetchDifyChatApps } from '../services/api';
 import type { DifyChatApp } from '../services/api';
 import './SessionPage.css';
 
-/** Generate or retrieve a persistent Dify user ID for conversation history */
+/** Get Dify user ID bound to logged-in user identity */
 function getDifyUserId(): string {
+  // Prefer logged-in username for cross-device conversation history
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      if (user?.username) {
+        return user.username;
+      }
+    } catch {
+      // Fallback to random ID below
+    }
+  }
+  // Fallback: persistent random ID for unauthenticated sessions
   let uid = localStorage.getItem('dify_user_id');
   if (!uid) {
     uid = crypto.randomUUID
