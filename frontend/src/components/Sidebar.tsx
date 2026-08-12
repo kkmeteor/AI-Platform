@@ -38,10 +38,10 @@ const navGroups: NavGroup[] = [
     title: 'Online',
     items: [
       { key: 'portal', icon: icons.portal, label: '门户' },
-      { key: 'session', icon: icons.session, label: 'Agent 会话' },
-      { key: 'agent', icon: icons.agent, label: 'Agent 编排' },
       { key: 'skill', icon: icons.skill, label: 'Skills' },
       { key: 'mcp', icon: icons.mcp, label: 'MCPs' },
+      { key: 'session', icon: icons.session, label: 'Agent 会话' },
+      { key: 'agent', icon: icons.agent, label: 'Agent 编排' },
       { key: 'rag', icon: icons.rag, label: 'RAGs' },
     ],
   },

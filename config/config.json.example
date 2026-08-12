@@ -17,5 +17,5 @@
     "userPrefix": "YOURDOMAIN\\"
   },
   "jwtSecretKey": "change-me-to-a-random-secret",
-  "jwtExpireHours": 8
+  "jwtExpireHours": 168
 }
