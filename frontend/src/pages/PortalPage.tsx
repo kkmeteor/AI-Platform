@@ -12,7 +12,6 @@ export default function PortalPage() {
   const [formData, setFormData] = useState<PortalLinkCreate>({
     name: '',
     url: '',
-    icon: '',
     description: '',
   });
 
@@ -37,7 +36,7 @@ export default function PortalPage() {
 
   const openAddModal = () => {
     setEditingLink(null);
-    setFormData({ name: '', url: '', icon: '', description: '' });
+    setFormData({ name: '', url: '', description: '' });
     setModalOpen(true);
   };
 
@@ -46,7 +45,6 @@ export default function PortalPage() {
     setFormData({
       name: link.name,
       url: link.url,
-      icon: link.icon || '',
       description: link.description || '',
     });
     setModalOpen(true);
@@ -63,7 +61,6 @@ export default function PortalPage() {
         await updatePortalLink(editingLink.id, {
           name: formData.name.trim(),
           url: formData.url.trim(),
-          icon: formData.icon?.trim() || undefined,
           description: formData.description?.trim() || undefined,
         });
         message.success('Link updated');
@@ -71,7 +68,6 @@ export default function PortalPage() {
         await createPortalLink({
           name: formData.name.trim(),
           url: formData.url.trim(),
-          icon: formData.icon?.trim() || undefined,
           description: formData.description?.trim() || undefined,
         });
         message.success('Link added');
@@ -132,7 +128,6 @@ export default function PortalPage() {
         <div className="portal-skeleton">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="portal-skeleton-card">
-              <div className="portal-skeleton-line icon" />
               <div className="portal-skeleton-line short" />
               <div className="portal-skeleton-line" />
             </div>
@@ -140,7 +135,6 @@ export default function PortalPage() {
         </div>
       ) : links.length === 0 ? (
         <div className="portal-empty">
-          <div className="portal-empty-icon">🔗</div>
           <p className="portal-empty-text">No portal links yet</p>
           <p className="portal-empty-hint">Click "Add site" to add your first internal link</p>
         </div>
@@ -153,10 +147,7 @@ export default function PortalPage() {
               onClick={() => handleCardClick(link)}
               style={link.background_image ? { backgroundImage: `url(${link.background_image})` } : undefined}
             >
-              <div className="portal-card-top">
-                <div className="portal-card-icon">{link.icon || '🔗'}</div>
-                <div className="portal-card-name">{link.name}</div>
-              </div>
+              <div className="portal-card-name">{link.name}</div>
               {link.description && <div className="portal-card-desc">{link.description}</div>}
               <div className="portal-card-footer">
                 <span className="portal-card-url">{link.url}</span>
@@ -276,16 +267,6 @@ export default function PortalPage() {
               onChange={(e) => setFormData({ ...formData, url: e.target.value })}
             />
             <span className="portal-form-hint">Full URL starting with http:// or https://</span>
-          </div>
-          <div className="portal-form-field">
-            <label>Icon (emoji)</label>
-            <input
-              type="text"
-              placeholder="e.g. 🚀"
-              value={formData.icon}
-              onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-              maxLength={4}
-            />
           </div>
           <div className="portal-form-field">
             <label>Description</label>

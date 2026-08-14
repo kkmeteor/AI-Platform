@@ -14,13 +14,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 responses - clear token and redirect to login
+// Handle 401 responses - clear token and redirect to login.
+// A flag prevents multiple concurrent 401s from triggering duplicate redirects.
+let isRedirectingToLogin = false;
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isRedirectingToLogin) {
+      isRedirectingToLogin = true;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('role');
       // Redirect to login page if not already there
       if (!window.location.search.includes('section=login')) {
         window.location.href = '/?section=login';

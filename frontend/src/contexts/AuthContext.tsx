@@ -26,17 +26,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
-        // Verify token is still valid
+        // Verify token is still valid with backend
         fetchCurrentUser()
           .then((freshUser) => {
             setUser(freshUser);
             localStorage.setItem('user', JSON.stringify(freshUser));
           })
-          .catch(() => {
-            // Token invalid, clear
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            setUser(null);
+          .catch((err) => {
+            // Only clear token when backend explicitly rejects it (401).
+            // Network errors / backend unreachable should NOT log the user out —
+            // the 401 response interceptor will handle mid-session expiry.
+            if (err?.response?.status === 401) {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              setUser(null);
+            }
           })
           .finally(() => setIsLoading(false));
       } catch {
