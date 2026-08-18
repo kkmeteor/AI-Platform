@@ -22,12 +22,16 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && !isRedirectingToLogin) {
-      isRedirectingToLogin = true;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('role');
-      // Redirect to login page if not already there
+      // Redirect to login page if not already there.
+      // The flag only guards the actual navigation: it is set right before
+      // redirecting (which reloads the page and resets module state), and is
+      // left untouched when already on the login page so that a later 401
+      // after a successful SPA login is still handled.
       if (!window.location.search.includes('section=login')) {
+        isRedirectingToLogin = true;
         window.location.href = '/?section=login';
       }
     }
@@ -175,6 +179,9 @@ export interface LoginResponse {
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   const res = await api.post<LoginResponse>('/auth/login', data);
+  // A failed login attempt may have set the redirect flag while the user was
+  // already on the login page; reset it so subsequent 401s are not swallowed.
+  isRedirectingToLogin = false;
   return res.data;
 }
 
