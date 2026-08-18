@@ -13,6 +13,7 @@ from typing import List
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
+from mcp import Client, StdioServerParameters, stdio_client
 from sqlalchemy.orm import Session
 
 from app.auth import require_role
@@ -37,9 +38,15 @@ async def _discover_tools(server: McpServer, timeout_seconds: float = 5.0) -> tu
     """
     Connect to an MCP server and retrieve its tool list.
 
+    stdio servers are spawned as a local subprocess (slower cold start,
+    e.g. uvx first-run downloads); HTTP servers are probed directly.
+
     Returns (is_active, tools_list).
     On any failure returns (False, []).
     """
+    if server.transport == "stdio":
+        return await _discover_stdio_tools(server)
+
     try:
         headers = json.loads(server.headers or "{}")
         headers.update({
@@ -107,6 +114,40 @@ async def _discover_tools(server: McpServer, timeout_seconds: float = 5.0) -> tu
         return False, []
 
 
+async def _discover_stdio_tools(server: McpServer, timeout_seconds: float = 30.0) -> tuple[bool, list[dict]]:
+    """
+    Spawn a local MCP server subprocess (stdio transport) via the mcp SDK
+    v2 Client and retrieve its tool list.
+
+    Returns (is_active, tools_list). On any failure returns (False, []).
+    """
+    try:
+        args = json.loads(server.args or "[]")
+        env = json.loads(server.env or "{}")
+        params = StdioServerParameters(
+            command=server.command,
+            args=args if isinstance(args, list) else [],
+            # SDK v2 merges env onto a small allow-list (PATH/HOME/...)
+            env=env if isinstance(env, dict) else None,
+        )
+        client = Client(stdio_client(params))
+        entered = False
+        try:
+            # __aenter__ spawns the subprocess and completes initialize handshake
+            await asyncio.wait_for(client.__aenter__(), timeout=timeout_seconds)
+            entered = True
+            result = await asyncio.wait_for(client.list_tools(), timeout=timeout_seconds)
+            return True, [tool.model_dump() for tool in result.tools]
+        finally:
+            # Explicit cleanup: a timeout cancellation would skip an async-with
+            # __aexit__, leaving the subprocess behind; run it here instead.
+            if entered:
+                await client.__aexit__(None, None, None)
+    except Exception as exc:
+        logger.warning("Failed to discover stdio tools from %s: %s", server.name, exc)
+        return False, []
+
+
 def _parse_sse(body: str) -> dict | None:
     """
     Parse an SSE response body and return the first JSON data object.
@@ -141,6 +182,9 @@ def _server_to_response(server: McpServer, tools: list[dict] | None = None) -> M
         url=server.url,
         transport=server.transport,
         headers=server.headers,
+        command=server.command,
+        args=server.args,
+        env=server.env,
         timeout=server.timeout,
         sse_read_timeout=server.sse_read_timeout,
         is_active=server.is_active,
@@ -189,6 +233,9 @@ async def create_mcp_server(
         url=payload.url,
         transport=payload.transport,
         headers=payload.headers,
+        command=payload.command,
+        args=payload.args,
+        env=payload.env,
         timeout=payload.timeout,
         sse_read_timeout=payload.sse_read_timeout,
     )

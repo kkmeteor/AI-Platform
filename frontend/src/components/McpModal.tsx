@@ -5,6 +5,29 @@ import type { McpServer, McpServerCreate, McpServerUpdate } from '../services/ap
 
 const { TextArea } = Input;
 
+const jsonArrayValidator = (_: unknown, value?: string) => {
+  if (!value || !value.trim()) return Promise.resolve();
+  try {
+    if (!Array.isArray(JSON.parse(value))) return Promise.reject(new Error('Must be a JSON array'));
+    return Promise.resolve();
+  } catch {
+    return Promise.reject(new Error('Invalid JSON array'));
+  }
+};
+
+const jsonObjectValidator = (_: unknown, value?: string) => {
+  if (!value || !value.trim()) return Promise.resolve();
+  try {
+    const parsed = JSON.parse(value);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return Promise.reject(new Error('Must be a JSON object'));
+    }
+    return Promise.resolve();
+  } catch {
+    return Promise.reject(new Error('Invalid JSON object'));
+  }
+};
+
 interface McpModalProps {
   open: boolean;
   server: McpServer | null; // null = create mode
@@ -15,6 +38,7 @@ interface McpModalProps {
 export default function McpModal({ open, server, onClose, onSuccess }: McpModalProps) {
   const [form] = Form.useForm();
   const isEdit = !!server;
+  const transport = Form.useWatch('transport', form);
 
   useEffect(() => {
     if (open) {
@@ -24,6 +48,9 @@ export default function McpModal({ open, server, onClose, onSuccess }: McpModalP
           url: server.url,
           transport: server.transport,
           headers: server.headers,
+          command: server.command ?? undefined,
+          args: server.args ?? undefined,
+          env: server.env ?? undefined,
           timeout: server.timeout,
           sse_read_timeout: server.sse_read_timeout,
         });
@@ -48,6 +75,9 @@ export default function McpModal({ open, server, onClose, onSuccess }: McpModalP
           url: values.url,
           transport: values.transport,
           headers: values.headers,
+          command: values.command,
+          args: values.args,
+          env: values.env,
           timeout: values.timeout,
           sse_read_timeout: values.sse_read_timeout,
         };
@@ -59,6 +89,9 @@ export default function McpModal({ open, server, onClose, onSuccess }: McpModalP
           url: values.url,
           transport: values.transport,
           headers: values.headers,
+          command: values.command,
+          args: values.args,
+          env: values.env,
           timeout: values.timeout,
           sse_read_timeout: values.sse_read_timeout,
         };
@@ -96,7 +129,11 @@ export default function McpModal({ open, server, onClose, onSuccess }: McpModalP
         <Form.Item
           name="url"
           label="URL"
-          rules={[{ required: true, message: 'Please enter the MCP endpoint URL' }]}
+          rules={
+            transport === 'stdio'
+              ? []
+              : [{ required: true, message: 'Please enter the MCP endpoint URL' }]
+          }
         >
           <Input placeholder="e.g. http://10.10.11.194:9887/mcp" />
         </Form.Item>
@@ -107,6 +144,18 @@ export default function McpModal({ open, server, onClose, onSuccess }: McpModalP
             <Select.Option value="sse">sse</Select.Option>
             <Select.Option value="stdio">stdio</Select.Option>
           </Select>
+        </Form.Item>
+
+        <Form.Item name="command" label="Command">
+          <Input placeholder="e.g. uvx" />
+        </Form.Item>
+
+        <Form.Item name="args" label="Args (JSON array)" rules={[{ validator: jsonArrayValidator }]}>
+          <TextArea rows={3} placeholder='["mcp-server-tapd"]' />
+        </Form.Item>
+
+        <Form.Item name="env" label="Env (JSON object)" rules={[{ validator: jsonObjectValidator }]}>
+          <TextArea rows={3} placeholder='{"TAPD_ACCESS_TOKEN": "..."}' />
         </Form.Item>
 
         <Form.Item

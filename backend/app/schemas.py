@@ -91,9 +91,12 @@ class SkillListResponse(BaseModel):
 
 class McpServerCreate(BaseModel):
     name: str
-    url: str
+    url: str = ""
     transport: str = "streamable_http"
     headers: Optional[str] = "{}"
+    command: Optional[str] = None
+    args: Optional[str] = None
+    env: Optional[str] = None
     timeout: int = 60
     sse_read_timeout: int = 50
 
@@ -103,6 +106,9 @@ class McpServerUpdate(BaseModel):
     url: Optional[str] = None
     transport: Optional[str] = None
     headers: Optional[str] = None
+    command: Optional[str] = None
+    args: Optional[str] = None
+    env: Optional[str] = None
     timeout: Optional[int] = None
     sse_read_timeout: Optional[int] = None
 
@@ -113,6 +119,9 @@ class McpServerResponse(BaseModel):
     url: str
     transport: str
     headers: str
+    command: Optional[str] = None
+    args: Optional[str] = None
+    env: Optional[str] = None
     timeout: int
     sse_read_timeout: int
     is_active: bool

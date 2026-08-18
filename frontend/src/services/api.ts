@@ -243,6 +243,9 @@ export interface McpServer {
   url: string;
   transport: string;
   headers: string;
+  command: string | null;
+  args: string | null;
+  env: string | null;
   timeout: number;
   sse_read_timeout: number;
   is_active: boolean;
@@ -253,9 +256,12 @@ export interface McpServer {
 
 export interface McpServerCreate {
   name: string;
-  url: string;
+  url?: string;
   transport?: string;
   headers?: string;
+  command?: string;
+  args?: string;
+  env?: string;
   timeout?: number;
   sse_read_timeout?: number;
 }
@@ -265,6 +271,9 @@ export interface McpServerUpdate {
   url?: string;
   transport?: string;
   headers?: string;
+  command?: string;
+  args?: string;
+  env?: string;
   timeout?: number;
   sse_read_timeout?: number;
 }
@@ -275,7 +284,8 @@ export async function fetchMcpServers(): Promise<McpServer[]> {
 }
 
 export async function fetchMcpServersStatus(): Promise<McpServer[]> {
-  const res = await api.get<McpServer[]>('/mcp/status', { timeout: 30000 });
+  // stdio servers may take up to 30s for cold start (uvx first-run download)
+  const res = await api.get<McpServer[]>('/mcp/status', { timeout: 60000 });
   return res.data;
 }
 

@@ -7,6 +7,9 @@ FROM python:3.11-slim
 # 设置工作目录
 WORKDIR /app
 
+# 安装 uv/uvx（stdio MCP server 探测需要；uv 发布在 PyPI，pip 安装即得 uv/uvx 二进制）
+RUN pip install --no-cache-dir uv
+
 # 复制依赖文件并安装
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

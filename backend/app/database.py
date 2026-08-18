@@ -44,7 +44,7 @@ def migrate_db():
             if col_name not in existing_columns:
                 conn.execute(f"ALTER TABLE skills ADD COLUMN {col_name} {col_type}")
 
-    # --- mcp_servers table creation ---
+    # --- mcp_servers table creation & migration ---
     cursor.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='mcp_servers'"
     )
@@ -56,6 +56,9 @@ def migrate_db():
                 url VARCHAR(500) NOT NULL,
                 transport VARCHAR(50) DEFAULT 'streamable_http',
                 headers TEXT DEFAULT '{}',
+                command VARCHAR(500),
+                args TEXT,
+                env TEXT,
                 timeout INTEGER DEFAULT 60,
                 sse_read_timeout INTEGER DEFAULT 50,
                 is_active BOOLEAN DEFAULT 1,
@@ -63,7 +66,18 @@ def migrate_db():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+    else:
+        cursor.execute("PRAGMA table_info(mcp_servers)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
 
+        mcp_migrations = [
+            ("command", "VARCHAR(500)"),
+            ("args", "TEXT"),
+            ("env", "TEXT"),
+        ]
+        for col_name, col_type in mcp_migrations:
+            if col_name not in existing_columns:
+                conn.execute(f"ALTER TABLE mcp_servers ADD COLUMN {col_name} {col_type}")
     # --- users table creation ---
     cursor.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
