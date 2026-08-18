@@ -14,15 +14,24 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 responses - clear token and redirect to login
+// Handle 401 responses - clear token and redirect to login.
+// A flag prevents multiple concurrent 401s from triggering duplicate redirects.
+let isRedirectingToLogin = false;
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !isRedirectingToLogin) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Redirect to login page if not already there
+      localStorage.removeItem('role');
+      // Redirect to login page if not already there.
+      // The flag only guards the actual navigation: it is set right before
+      // redirecting (which reloads the page and resets module state), and is
+      // left untouched when already on the login page so that a later 401
+      // after a successful SPA login is still handled.
       if (!window.location.search.includes('section=login')) {
+        isRedirectingToLogin = true;
         window.location.href = '/?section=login';
       }
     }
@@ -170,6 +179,9 @@ export interface LoginResponse {
 
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   const res = await api.post<LoginResponse>('/auth/login', data);
+  // A failed login attempt may have set the redirect flag while the user was
+  // already on the login page; reset it so subsequent 401s are not swallowed.
+  isRedirectingToLogin = false;
   return res.data;
 }
 
@@ -238,6 +250,9 @@ export interface McpServer {
   url: string;
   transport: string;
   headers: string;
+  command: string | null;
+  args: string | null;
+  env: string | null;
   timeout: number;
   sse_read_timeout: number;
   is_active: boolean;
@@ -248,9 +263,12 @@ export interface McpServer {
 
 export interface McpServerCreate {
   name: string;
-  url: string;
+  url?: string;
   transport?: string;
   headers?: string;
+  command?: string;
+  args?: string;
+  env?: string;
   timeout?: number;
   sse_read_timeout?: number;
 }
@@ -260,6 +278,9 @@ export interface McpServerUpdate {
   url?: string;
   transport?: string;
   headers?: string;
+  command?: string;
+  args?: string;
+  env?: string;
   timeout?: number;
   sse_read_timeout?: number;
 }
@@ -270,7 +291,8 @@ export async function fetchMcpServers(): Promise<McpServer[]> {
 }
 
 export async function fetchMcpServersStatus(): Promise<McpServer[]> {
-  const res = await api.get<McpServer[]>('/mcp/status', { timeout: 30000 });
+  // stdio servers may take up to 30s for cold start (uvx first-run download)
+  const res = await api.get<McpServer[]>('/mcp/status', { timeout: 60000 });
   return res.data;
 }
 

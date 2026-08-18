@@ -127,7 +127,7 @@ export default function McpPage() {
                   </div>
                   <div className="mcp-card-header-text">
                     <div className="mcp-card-name">{server.name}</div>
-                    <div className="mcp-card-url">{server.url}</div>
+                    <div className="mcp-card-url">{server.url || server.command || '—'}</div>
                   </div>
                   <div className="mcp-card-actions">
                     <Tooltip title="Refresh tools">
