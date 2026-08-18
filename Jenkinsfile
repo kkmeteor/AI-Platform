@@ -7,6 +7,11 @@ pipeline {
     agent none
 
     parameters {
+        choice(
+            name: 'RUN_MODE',
+            choices: ['full', 'build-push', 'deploy-only'],
+            description: 'full: build, push, deploy and cleanup; build-push: build and push images only; deploy-only: pull and deploy images only (images must already be pushed)'
+        )
         booleanParam(
             name: 'PUSH_LATEST',
             defaultValue: true,
@@ -35,12 +40,14 @@ pipeline {
                     }
                     stages {
                         stage('Backend - Checkout') {
+                            when { expression { params.RUN_MODE != 'deploy-only' } }
                             agent { label "tengfei-test" }
                             steps {
                                 checkout scm
                             }
                         }
                         stage('Backend - Build') {
+                            when { expression { params.RUN_MODE != 'deploy-only' } }
                             agent { label "tengfei-test" }
                             steps {
                                 script {
@@ -56,6 +63,7 @@ pipeline {
                             }
                         }
                         stage('Backend - Push') {
+                            when { expression { params.RUN_MODE != 'deploy-only' } }
                             agent { label "tengfei-test" }
                             steps {
                                 bat 'docker push %IMAGE_WITH_TAG%'
@@ -67,6 +75,7 @@ pipeline {
                             }
                         }
                         stage('Backend - Deploy') {
+                            when { expression { params.RUN_MODE != 'build-push' } }
                             agent { label "master" }
                             steps {
                                 checkout scm
@@ -81,6 +90,7 @@ pipeline {
                             }
                         }
                         stage('Backend - Cleanup') {
+                            when { expression { params.RUN_MODE != 'deploy-only' } }
                             agent { label "tengfei-test" }
                             steps {
                                 bat '''
@@ -105,12 +115,14 @@ pipeline {
                     }
                     stages {
                         stage('Frontend - Checkout') {
+                            when { expression { params.RUN_MODE != 'deploy-only' } }
                             agent { label "tengfei-test" }
                             steps {
                                 checkout scm
                             }
                         }
                         stage('Frontend - Build') {
+                            when { expression { params.RUN_MODE != 'deploy-only' } }
                             agent { label "tengfei-test" }
                             steps {
                                 script {
@@ -126,6 +138,7 @@ pipeline {
                             }
                         }
                         stage('Frontend - Push') {
+                            when { expression { params.RUN_MODE != 'deploy-only' } }
                             agent { label "tengfei-test" }
                             steps {
                                 bat 'docker push %IMAGE_WITH_TAG%'
@@ -137,6 +150,7 @@ pipeline {
                             }
                         }
                         stage('Frontend - Deploy') {
+                            when { expression { params.RUN_MODE != 'build-push' } }
                             agent { label "master" }
                             steps {
                                 checkout scm
@@ -151,6 +165,7 @@ pipeline {
                             }
                         }
                         stage('Frontend - Cleanup') {
+                            when { expression { params.RUN_MODE != 'deploy-only' } }
                             agent { label "tengfei-test" }
                             steps {
                                 bat '''

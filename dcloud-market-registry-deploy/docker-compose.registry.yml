@@ -26,9 +26,11 @@ services:
       - C:/Data/skills.db:/app/data/skills.db
       - C:/Data/uploads:/app/uploads
       # Mount config.json for Dify credentials (runtime override, no rebuild needed)
-      - ./config/config.json:/config/config.json:ro
+      - C:/Data/config/config.json:/config/config.json:ro
     environment:
       - DATABASE_URL=sqlite:///./data/skills.db
+      - UPLOAD_DIR=/app/uploads
+      - DATA_DIR=/app/data
     networks:
       - dcloud-network
     healthcheck:
@@ -53,7 +55,7 @@ services:
       - DIFY_URL=http://10.10.9.65:80
     volumes:
       # Mount config file for runtime override (no rebuild needed)
-      - ./config/config.json:/usr/share/nginx/html/config.json:ro
+      - C:/Data/config/config.json:/usr/share/nginx/html/config.json:ro
     depends_on:
       backend:
         condition: service_healthy
