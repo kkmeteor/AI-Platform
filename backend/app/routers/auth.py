@@ -33,8 +33,12 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
         record_login_log(db, None, username or "unknown", ip_address, False, "Empty username or password")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username and password are required")
 
-    # Authenticate against LDAP
-    success, message, user_info = authenticate_ldap(username, req.password)
+    # Guest account bypasses LDAP authentication
+    if username == "guest" and req.password == "guest":
+        success, message, user_info = True, "Guest login", {"display_name": "Guest"}
+    else:
+        # Authenticate against LDAP
+        success, message, user_info = authenticate_ldap(username, req.password)
 
     if not success:
         record_login_log(db, None, username, ip_address, False, message)
