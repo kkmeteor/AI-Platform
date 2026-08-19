@@ -130,13 +130,22 @@ async def _discover_stdio_tools(server: McpServer, timeout_seconds: float = 30.0
             # SDK v2 merges env onto a small allow-list (PATH/HOME/...)
             env=env if isinstance(env, dict) else None,
         )
-        client = Client(stdio_client(params))
+        # mode="legacy": skip the server/discover probe (modern 2026 protocol)
+        # and go straight to the initialize handshake — stdio servers like
+        # mcp-server-tapd are legacy and would reject the probe with noise.
+        client = Client(stdio_client(params), mode="legacy")
         entered = False
         try:
-            # __aenter__ spawns the subprocess and completes initialize handshake
-            await asyncio.wait_for(client.__aenter__(), timeout=timeout_seconds)
+            # __aenter__ spawns the subprocess and completes initialize handshake.
+            # asyncio.timeout (not wait_for): on Python 3.11 wait_for runs the
+            # coroutine in a separate task, so the anyio TaskGroup entered inside
+            # __aenter__ would be exited from a different task and blow up with
+            # "Attempted to exit cancel scope in a different task".
+            async with asyncio.timeout(timeout_seconds):
+                await client.__aenter__()
             entered = True
-            result = await asyncio.wait_for(client.list_tools(), timeout=timeout_seconds)
+            async with asyncio.timeout(timeout_seconds):
+                result = await client.list_tools()
             return True, [tool.model_dump() for tool in result.tools]
         finally:
             # Explicit cleanup: a timeout cancellation would skip an async-with
