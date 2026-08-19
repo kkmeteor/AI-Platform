@@ -14,6 +14,23 @@ import './UserManagePage.css';
 
 const ROLE_OPTIONS = ['admin', 'editor', 'viewer'];
 
+/** Format an ISO timestamp (UTC) as Shanghai local time, independent of browser timezone. */
+function formatShanghaiTime(text?: string | null): string {
+  if (!text) return '-';
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+}
+
 export default function UserManagePage() {
   return (
     <div className="user-manage-page">
@@ -130,7 +147,7 @@ function UserList() {
       dataIndex: 'last_login_at',
       key: 'last_login_at',
       width: 180,
-      render: (text) => text ? new Date(text).toLocaleString('zh-CN') : '-',
+      render: (text) => formatShanghaiTime(text),
     },
   ];
 
@@ -200,7 +217,7 @@ function LoginLogs() {
       dataIndex: 'login_time',
       key: 'login_time',
       width: 180,
-      render: (text) => text ? new Date(text).toLocaleString('zh-CN') : '-',
+      render: (text) => formatShanghaiTime(text),
     },
     {
       title: 'IP 地址',

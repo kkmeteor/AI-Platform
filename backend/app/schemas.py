@@ -1,6 +1,27 @@
-from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, field_validator
+from datetime import datetime, timezone
+from typing import Annotated, Optional, List
+from pydantic import BaseModel, BeforeValidator, field_validator
+
+
+def _ensure_utc(v):
+    """Normalize a datetime value to UTC with explicit tzinfo.
+
+    SQLite stores timestamps as naive UTC strings (see models.py), which
+    would be serialized without a timezone marker and misread as local
+    time by timezone-naive clients. Attaching UTC makes the JSON output
+    carry a "Z" suffix so frontends can convert to local time correctly.
+    """
+    if v is None:
+        return None
+    if isinstance(v, str):
+        v = datetime.fromisoformat(v.replace("Z", "+00:00"))
+    if v.tzinfo is None:
+        return v.replace(tzinfo=timezone.utc)
+    return v.astimezone(timezone.utc)
+
+
+# Datetime fields stored as naive UTC get an explicit UTC tzinfo.
+UtcDatetime = Annotated[datetime, BeforeValidator(_ensure_utc)]
 
 
 class SkillCreate(BaseModel):
@@ -25,8 +46,8 @@ class SkillResponse(BaseModel):
     download_count: int = 0
     is_readonly: bool = False
     is_pinned: bool = False
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: Optional[UtcDatetime] = None
+    updated_at: Optional[UtcDatetime] = None
 
     class Config:
         from_attributes = True
@@ -71,8 +92,8 @@ class PortalLinkResponse(BaseModel):
     category: Optional[str] = "custom"
     sort_order: int = 0
     is_builtin: bool = False
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: Optional[UtcDatetime] = None
+    updated_at: Optional[UtcDatetime] = None
 
     class Config:
         from_attributes = True
@@ -126,8 +147,8 @@ class McpServerResponse(BaseModel):
     sse_read_timeout: int
     is_active: bool
     tools: List[dict] = []
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: Optional[UtcDatetime] = None
+    updated_at: Optional[UtcDatetime] = None
 
     class Config:
         from_attributes = True
@@ -142,9 +163,9 @@ class UserResponse(BaseModel):
     email: Optional[str] = None
     role: str = "viewer"
     is_active: bool = True
-    last_login_at: Optional[datetime] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    last_login_at: Optional[UtcDatetime] = None
+    created_at: Optional[UtcDatetime] = None
+    updated_at: Optional[UtcDatetime] = None
 
     class Config:
         from_attributes = True
@@ -169,7 +190,7 @@ class LoginLogResponse(BaseModel):
     id: int
     user_id: Optional[int] = None
     username: str
-    login_time: Optional[datetime] = None
+    login_time: Optional[UtcDatetime] = None
     ip_address: Optional[str] = None
     success: bool = True
     message: Optional[str] = None

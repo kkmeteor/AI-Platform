@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Spin } from 'antd';
 import Sidebar from './components/Sidebar';
 import PlaceholderPage from './components/PlaceholderPage';
@@ -140,10 +140,10 @@ function AppContent() {
   const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const [activeSection, setActiveSection] = useState(getInitialSection());
   const [agentCards, setAgentCards] = useState<CardData[]>([]);
-  const [agentLoading, setAgentLoading] = useState(true);
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [agentLoaded, setAgentLoaded] = useState(false);
 
-  useEffect(() => {
-    const loadAgents = async () => {
+  const loadAgents = useCallback(async () => {
       try {
         // Fetch all datasets once for local matching
         let datasetMap = new Map<string, { id: string; name: string }>();
@@ -230,9 +230,16 @@ function AppContent() {
       } finally {
         setAgentLoading(false);
       }
-    };
-    loadAgents();
   }, []);
+
+  // Load agent data lazily only when the Agent section is first opened,
+  // so login / Portal rendering is not blocked by slow Dify proxy calls.
+  useEffect(() => {
+    if (activeSection !== 'agent' || agentLoaded) return;
+    setAgentLoaded(true);
+    setAgentLoading(true);
+    loadAgents();
+  }, [activeSection, agentLoaded, loadAgents]);
 
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
