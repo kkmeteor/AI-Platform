@@ -39,6 +39,26 @@ if not exist "C:\Data\skills.db" (
     echo [INFO] Initializing empty skills.db file...
     type nul > "C:\Data\skills.db"
 )
+REM Initialize config directory and config.json, so Docker mounts it as a file not a directory
+if not exist "C:\Data\config" (
+    echo [INFO] Creating C:\Data\config directory...
+    mkdir "C:\Data\config"
+)
+REM Docker creates a directory instead of a file when the bind-mount source is missing;
+REM replace any directory left at config.json path with a real config file
+if exist "C:\Data\config\config.json\" (
+    echo [WARN] C:\Data\config\config.json is a directory, replacing with file...
+    rmdir /s /q "C:\Data\config\config.json"
+)
+if not exist "C:\Data\config\config.json" (
+    echo [INFO] Initializing config.json file...
+    if exist "config\config.json" (
+        copy /y "config\config.json" "C:\Data\config\config.json" >nul
+    ) else (
+        type nul > "C:\Data\config\config.json"
+    )
+)
+echo [OK] Config directory ready.
 REM On first deployment, copy existing upload files from backend to C:\Data\uploads
 if exist "backend\uploads" (
     dir /b "backend\uploads\*.zip" >nul 2>&1
