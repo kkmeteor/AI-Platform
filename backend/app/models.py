@@ -61,6 +61,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
+    password = Column(String(200), nullable=True)  # base64 encoded cached password
     display_name = Column(String(100), nullable=True)
     email = Column(String(200), nullable=True)
     role = Column(String(20), default="viewer", nullable=False)

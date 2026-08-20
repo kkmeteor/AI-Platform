@@ -2,6 +2,7 @@
 Authentication router: login, logout, and current user info.
 """
 
+import base64
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -25,7 +26,7 @@ def _get_client_ip(request: Request) -> str:
 
 @router.post("/login", response_model=LoginResponse)
 def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
-    """Authenticate user via LDAP/AD and return JWT token."""
+    """Authenticate user via cached credentials, falling back to LDAP/AD on mismatch, then return JWT token."""
     username = req.username.strip()
     ip_address = _get_client_ip(request)
 
@@ -33,24 +34,41 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
         record_login_log(db, None, username or "unknown", ip_address, False, "Empty username or password")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username and password are required")
 
-    # Guest account bypasses LDAP authentication
-    if username == "guest" and req.password == "guest":
-        success, message, user_info = True, "Guest login", {"display_name": "Guest"}
-    else:
-        # Authenticate against LDAP
-        success, message, user_info = authenticate_ldap(username, req.password)
-
-    if not success:
-        record_login_log(db, None, username, ip_address, False, message)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=message)
-
-    # Find or create local user record
+    # Look up cached credentials in database first
     user = db.query(User).filter(User.username == username).first()
 
+    encoded_password = base64.b64encode(req.password.encode("utf-8")).decode("utf-8")
+
+    if user and user.password == encoded_password:
+        # Cached credential hit: skip LDAP authentication
+        success, message, user_info = True, "Cached credential login", {
+            "display_name": user.display_name,
+            "email": user.email,
+        }
+    else:
+        # Cache miss or password mismatch: fall back to guest / LDAP authentication
+        if username == "guest" and req.password == "guest":
+            success, message, user_info = True, "Guest login", {"display_name": "Guest"}
+        else:
+            # Authenticate against LDAP
+            success, message, user_info = authenticate_ldap(username, req.password)
+
+        if not success:
+            record_login_log(db, user.id if user else None, username, ip_address, False, message)
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=message)
+
+        # Refresh cached password after successful re-authentication
+        if user:
+            user.password = encoded_password
+
+    # Find or create local user record
     if user:
         if not user.is_active:
             record_login_log(db, user.id, username, ip_address, False, "Account disabled")
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account has been disabled. Please contact administrator.")
+        # Cache password on first successful LDAP login
+        if not user.password:
+            user.password = base64.b64encode(req.password.encode("utf-8")).decode("utf-8")
         # Update user info from AD
         if user_info:
             if user_info.get("display_name"):
@@ -58,9 +76,10 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
             if user_info.get("email"):
                 user.email = user_info["email"]
     else:
-        # Create new user (first login)
+        # Create new user (first login) and cache credentials
         user = User(
             username=username,
+            password=base64.b64encode(req.password.encode("utf-8")).decode("utf-8"),
             display_name=user_info.get("display_name") if user_info else username,
             email=user_info.get("email") if user_info else None,
             role="viewer",

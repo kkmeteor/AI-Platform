@@ -87,6 +87,7 @@ def migrate_db():
             CREATE TABLE users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username VARCHAR(50) UNIQUE NOT NULL,
+                password VARCHAR(200),
                 display_name VARCHAR(100),
                 email VARCHAR(200),
                 role VARCHAR(20) NOT NULL DEFAULT 'viewer',
@@ -97,6 +98,16 @@ def migrate_db():
             )
         """)
         conn.execute("CREATE INDEX ix_users_username ON users (username)")
+    else:
+        cursor.execute("PRAGMA table_info(users)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+
+        user_migrations = [
+            ("password", "VARCHAR(200)"),
+        ]
+        for col_name, col_type in user_migrations:
+            if col_name not in existing_columns:
+                conn.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
 
     # --- login_logs table creation ---
     cursor.execute(
