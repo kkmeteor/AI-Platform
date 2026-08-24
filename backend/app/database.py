@@ -62,6 +62,8 @@ def migrate_db():
                 timeout INTEGER DEFAULT 60,
                 sse_read_timeout INTEGER DEFAULT 50,
                 is_active BOOLEAN DEFAULT 1,
+                tools_cache TEXT,
+                tools_cached_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -74,6 +76,8 @@ def migrate_db():
             ("command", "VARCHAR(500)"),
             ("args", "TEXT"),
             ("env", "TEXT"),
+            ("tools_cache", "TEXT"),
+            ("tools_cached_at", "TIMESTAMP"),
         ]
         for col_name, col_type in mcp_migrations:
             if col_name not in existing_columns:

@@ -170,6 +170,14 @@
   letter-spacing: 0.05em;
 }
 
+.mcp-tools-updated {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
 .mcp-tools-section ul {
   list-style: none;
   padding: 0;

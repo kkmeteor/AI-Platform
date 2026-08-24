@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button, Spin, Empty, Popconfirm, message, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { fetchMcpServers, fetchMcpServersStatus, deleteMcpServer, refreshMcpServer, isAdmin } from '../services/api';
 import type { McpServer } from '../services/api';
 import McpModal from '../components/McpModal';
@@ -177,7 +178,14 @@ export default function McpPage() {
                 {/* Tools list */}
                 {server.tools && server.tools.length > 0 && (
                   <div className="mcp-tools-section">
-                    <h4>Tools ({server.tools.length})</h4>
+                    <h4>
+                      Tools ({server.tools.length})
+                      {server.tools_cached_at && (
+                        <span className="mcp-tools-updated">
+                          · updated {dayjs(server.tools_cached_at).format('MM-DD HH:mm')}
+                        </span>
+                      )}
+                    </h4>
                     <ul>
                       {server.tools.map((tool, i) => (
                         <li key={i}>
@@ -191,7 +199,11 @@ export default function McpPage() {
 
                 {/* No tools message */}
                 {server.is_active && (!server.tools || server.tools.length === 0) && (
-                  <div className="mcp-no-tools">No tools discovered</div>
+                  <div className="mcp-no-tools">
+                    {server.transport === 'stdio'
+                      ? 'No tools yet — click refresh to discover'
+                      : 'No tools discovered'}
+                  </div>
                 )}
 
                 {!server.is_active && (
