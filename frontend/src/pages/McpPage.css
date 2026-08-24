@@ -39,6 +39,7 @@
   padding: 22px;
   border: 1px solid var(--border-default);
   transition: all var(--transition);
+  cursor: pointer;
 }
 
 .mcp-card:hover {
