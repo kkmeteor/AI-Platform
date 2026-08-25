@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button, Spin, Empty, Popconfirm, message, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { fetchMcpServers, fetchMcpServersStatus, deleteMcpServer, refreshMcpServer, isAdmin } from '../services/api';
 import type { McpServer } from '../services/api';
 import McpModal from '../components/McpModal';
+import McpDetailModal from '../components/McpDetailModal';
 import './McpPage.css';
 
 export default function McpPage() {
@@ -11,6 +13,7 @@ export default function McpPage() {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingServer, setEditingServer] = useState<McpServer | null>(null);
+  const [detailServer, setDetailServer] = useState<McpServer | null>(null);
   const [refreshingIds, setRefreshingIds] = useState<Set<number>>(new Set());
 
   const [probing, setProbing] = useState(false);
@@ -119,6 +122,7 @@ export default function McpPage() {
               <div
                 key={server.id}
                 className={`mcp-card ${!server.is_active ? 'inactive' : ''}`}
+                onClick={() => setDetailServer(server)}
               >
                 {/* Card header */}
                 <div className="mcp-card-header">
@@ -129,7 +133,7 @@ export default function McpPage() {
                     <div className="mcp-card-name">{server.name}</div>
                     <div className="mcp-card-url">{server.url || server.command || '—'}</div>
                   </div>
-                  <div className="mcp-card-actions">
+                  <div className="mcp-card-actions" onClick={e => e.stopPropagation()}>
                     <Tooltip title="Refresh tools">
                       <Button
                         type="text"
@@ -174,7 +178,14 @@ export default function McpPage() {
                 {/* Tools list */}
                 {server.tools && server.tools.length > 0 && (
                   <div className="mcp-tools-section">
-                    <h4>Tools ({server.tools.length})</h4>
+                    <h4>
+                      Tools ({server.tools.length})
+                      {server.tools_cached_at && (
+                        <span className="mcp-tools-updated">
+                          · updated {dayjs(server.tools_cached_at).format('MM-DD HH:mm')}
+                        </span>
+                      )}
+                    </h4>
                     <ul>
                       {server.tools.map((tool, i) => (
                         <li key={i}>
@@ -188,7 +199,11 @@ export default function McpPage() {
 
                 {/* No tools message */}
                 {server.is_active && (!server.tools || server.tools.length === 0) && (
-                  <div className="mcp-no-tools">No tools discovered</div>
+                  <div className="mcp-no-tools">
+                    {server.transport === 'stdio'
+                      ? 'No tools yet — click refresh to discover'
+                      : 'No tools discovered'}
+                  </div>
                 )}
 
                 {!server.is_active && (
@@ -206,6 +221,13 @@ export default function McpPage() {
         server={editingServer}
         onClose={() => setModalOpen(false)}
         onSuccess={() => { loadServers(); probeStatus(); }}
+      />
+
+      {/* Detail Modal */}
+      <McpDetailModal
+        open={!!detailServer}
+        server={detailServer}
+        onClose={() => setDetailServer(null)}
       />
     </div>
   );

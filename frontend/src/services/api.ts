@@ -257,6 +257,7 @@ export interface McpServer {
   sse_read_timeout: number;
   is_active: boolean;
   tools: McpTool[];
+  tools_cached_at: string | null;
   created_at: string | null;
   updated_at: string | null;
 }

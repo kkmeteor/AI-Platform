@@ -9,6 +9,7 @@ via the MCP JSON-RPC protocol (streamable_http transport).
 import asyncio
 import json
 import logging
+from datetime import datetime, timezone
 from typing import List
 
 import httpx
@@ -183,8 +184,25 @@ def _parse_sse(body: str) -> dict | None:
         return None
 
 
+def _load_cached_tools(server: McpServer) -> list[dict]:
+    """Return the tool list persisted by the last probe (empty if none)."""
+    if not server.tools_cache:
+        return []
+    try:
+        data = json.loads(server.tools_cache)
+        return data if isinstance(data, list) else []
+    except json.JSONDecodeError:
+        return []
+
+
+def _cache_tools(server: McpServer, tools: list[dict]) -> None:
+    """Persist a probed tool list with a timestamp (caller commits)."""
+    server.tools_cache = json.dumps(tools, ensure_ascii=False) if tools else "[]"
+    server.tools_cached_at = datetime.now(timezone.utc)
+
+
 def _server_to_response(server: McpServer, tools: list[dict] | None = None) -> McpServerResponse:
-    """Convert a DB model to the response schema."""
+    """Convert a DB model to the response schema (tools fall back to cache)."""
     return McpServerResponse(
         id=server.id,
         name=server.name,
@@ -197,7 +215,8 @@ def _server_to_response(server: McpServer, tools: list[dict] | None = None) -> M
         timeout=server.timeout,
         sse_read_timeout=server.sse_read_timeout,
         is_active=server.is_active,
-        tools=tools or [],
+        tools=tools if tools is not None else _load_cached_tools(server),
+        tools_cached_at=server.tools_cached_at,
         created_at=server.created_at,
         updated_at=server.updated_at,
     )
@@ -220,7 +239,14 @@ async def probe_mcp_servers_status(db: Session = Depends(get_db)):
     servers = db.query(McpServer).order_by(McpServer.created_at.desc()).all()
 
     async def _probe_one(srv: McpServer):
+        # stdio probing spawns a uvx subprocess per probe — skip it in automatic
+        # status probing and serve the cached tool list instead. Users can still
+        # trigger a live probe via the refresh endpoint.
+        if srv.transport == "stdio":
+            return _server_to_response(srv)
+
         is_active, tools = await _discover_tools(srv, timeout_seconds=5.0)
+        _cache_tools(srv, tools)
         srv.is_active = is_active
         db.commit()
         db.refresh(srv)
@@ -252,8 +278,9 @@ async def create_mcp_server(
     db.commit()
     db.refresh(server)
 
-    # Probe tools immediately
+    # Probe tools immediately and cache the result
     is_active, tools = await _discover_tools(server)
+    _cache_tools(server, tools)
     server.is_active = is_active
     db.commit()
     db.refresh(server)
@@ -280,8 +307,9 @@ async def update_mcp_server(
     db.commit()
     db.refresh(server)
 
-    # Re-probe tools
+    # Re-probe tools and refresh the cache
     is_active, tools = await _discover_tools(server)
+    _cache_tools(server, tools)
     server.is_active = is_active
     db.commit()
     db.refresh(server)
@@ -317,6 +345,7 @@ async def refresh_mcp_server(
         raise HTTPException(status_code=404, detail="MCP server not found")
 
     is_active, tools = await _discover_tools(server)
+    _cache_tools(server, tools)
     server.is_active = is_active
     db.commit()
     db.refresh(server)

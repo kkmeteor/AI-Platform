@@ -147,6 +147,7 @@ class McpServerResponse(BaseModel):
     sse_read_timeout: int
     is_active: bool
     tools: List[dict] = []
+    tools_cached_at: Optional[UtcDatetime] = None
     created_at: Optional[UtcDatetime] = None
     updated_at: Optional[UtcDatetime] = None
 

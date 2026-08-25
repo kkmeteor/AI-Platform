@@ -52,6 +52,10 @@ class McpServer(Base):
     timeout = Column(Integer, default=60)
     sse_read_timeout = Column(Integer, default=50)
     is_active = Column(Boolean, default=True)
+    # Cached tool list from the last probe; avoids re-spawning stdio processes
+    # (e.g. uvx) just to display capabilities on the list page.
+    tools_cache = Column(Text, nullable=True)
+    tools_cached_at = Column(TIMESTAMP, nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
     updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
 
