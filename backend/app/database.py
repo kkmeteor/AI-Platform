@@ -131,6 +131,54 @@ def migrate_db():
             )
         """)
 
+    # --- test_machines table creation ---
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='test_machines'"
+    )
+    if not cursor.fetchone():
+        conn.execute("""
+            CREATE TABLE test_machines (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(100) NOT NULL,
+                ip_address VARCHAR(50) NOT NULL,
+                teamviewer_id VARCHAR(50),
+                status VARCHAR(20) NOT NULL DEFAULT 'unknown',
+                tags VARCHAR(200),
+                locked BOOLEAN NOT NULL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+    else:
+        cursor.execute("PRAGMA table_info(test_machines)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+
+        test_machine_migrations = [
+            ("locked", "BOOLEAN NOT NULL DEFAULT 0"),
+            ("tags", "VARCHAR(200)"),
+        ]
+        for col_name, col_type in test_machine_migrations:
+            if col_name not in existing_columns:
+                conn.execute(f"ALTER TABLE test_machines ADD COLUMN {col_name} {col_type}")
+
+    # --- test_machine_logs table creation ---
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='test_machine_logs'"
+    )
+    if not cursor.fetchone():
+        conn.execute("""
+            CREATE TABLE test_machine_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                machine_id INTEGER NOT NULL,
+                machine_name VARCHAR(100),
+                user_id INTEGER,
+                username VARCHAR(100),
+                action VARCHAR(50) NOT NULL,
+                detail VARCHAR(500),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
     conn.commit()
     conn.close()
 

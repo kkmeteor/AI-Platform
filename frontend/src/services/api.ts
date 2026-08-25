@@ -436,3 +436,99 @@ export async function deletePortalBackground(linkId: number): Promise<PortalLink
   const res = await api.delete<PortalLink>(`/portal/links/${linkId}/background`);
   return res.data;
 }
+
+// ── Test Machines ──
+
+export interface TestMachine {
+  id: number;
+  name: string;
+  ip_address: string;
+  teamviewer_id: string | null;
+  status: 'busy' | 'idle' | 'unknown' | 'offline';
+  locked: boolean;
+  tags: string[];
+  occupier_user_id: number | null;
+  occupier_username: string | null;
+  occupied_at: string | null;
+  expires_at: string | null;
+  remaining_seconds: number | null;
+  auto_renew: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface TestMachineCreate {
+  name: string;
+  ip_address: string;
+  teamviewer_id?: string;
+  status?: string;
+  locked?: boolean;
+  tags?: string[];
+}
+
+export interface TestMachineUpdate {
+  name?: string;
+  ip_address?: string;
+  teamviewer_id?: string;
+  status?: string;
+  locked?: boolean;
+  tags?: string[];
+}
+
+export interface TestMachineLog {
+  id: number;
+  machine_id: number;
+  machine_name: string | null;
+  user_id: number | null;
+  username: string | null;
+  action: string;
+  detail: string | null;
+  created_at: string | null;
+}
+
+export interface TestMachineLogListResponse {
+  items: TestMachineLog[];
+  total: number;
+}
+
+export async function fetchTestMachines(): Promise<TestMachine[]> {
+  const res = await api.get<TestMachine[]>('/test-machines');
+  return res.data;
+}
+
+export async function createTestMachine(data: TestMachineCreate): Promise<TestMachine> {
+  const res = await api.post<TestMachine>('/test-machines', data);
+  return res.data;
+}
+
+export async function updateTestMachine(id: number, data: TestMachineUpdate): Promise<TestMachine> {
+  const res = await api.put<TestMachine>(`/test-machines/${id}`, data);
+  return res.data;
+}
+
+export async function deleteTestMachine(id: number): Promise<void> {
+  await api.delete(`/test-machines/${id}`);
+}
+
+export async function occupyTestMachine(id: number, durationMinutes: number, autoRenew = false): Promise<TestMachine> {
+  const res = await api.post<TestMachine>(`/test-machines/${id}/occupy`, {
+    duration_minutes: durationMinutes,
+    auto_renew: autoRenew,
+  });
+  return res.data;
+}
+
+export async function releaseTestMachine(id: number): Promise<TestMachine> {
+  const res = await api.post<TestMachine>(`/test-machines/${id}/release`);
+  return res.data;
+}
+
+export async function heartbeatTestMachine(id: number): Promise<TestMachine> {
+  const res = await api.post<TestMachine>(`/test-machines/${id}/heartbeat`);
+  return res.data;
+}
+
+export async function fetchTestMachineLogs(params: { machine_id?: number; page?: number; page_size?: number } = {}): Promise<TestMachineLogListResponse> {
+  const res = await api.get<TestMachineLogListResponse>('/test-machines/logs', { params });
+  return res.data;
+}

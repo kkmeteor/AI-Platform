@@ -216,3 +216,80 @@ class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+# ---- Test Machine Schemas ----
+
+class TestMachineCreate(BaseModel):
+    name: str
+    ip_address: str
+    teamviewer_id: Optional[str] = None
+    status: str = "unknown"
+    locked: bool = False
+    tags: Optional[List[str]] = None
+
+
+class TestMachineUpdate(BaseModel):
+    name: Optional[str] = None
+    ip_address: Optional[str] = None
+    teamviewer_id: Optional[str] = None
+    status: Optional[str] = None
+    locked: Optional[bool] = None
+    tags: Optional[List[str]] = None
+
+
+class TestMachineResponse(BaseModel):
+    id: int
+    name: str
+    ip_address: str
+    teamviewer_id: Optional[str] = None
+    status: str = "unknown"
+    locked: bool = False
+    tags: List[str] = []
+    # Live occupancy info (populated from the in-memory occupation cache)
+    occupier_user_id: Optional[int] = None
+    occupier_username: Optional[str] = None
+    occupied_at: Optional[UtcDatetime] = None
+    expires_at: Optional[UtcDatetime] = None
+    remaining_seconds: Optional[int] = None
+    auto_renew: Optional[bool] = None
+    created_at: Optional[UtcDatetime] = None
+    updated_at: Optional[UtcDatetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def parse_tags(cls, v):
+        if v is None:
+            return []
+        if isinstance(v, list):
+            return [str(t).strip() for t in v if str(t).strip()]
+        if isinstance(v, str):
+            return [t.strip() for t in v.split(",") if t.strip()]
+        return []
+
+
+class TestMachineOccupyRequest(BaseModel):
+    duration_minutes: int
+    auto_renew: bool = False
+
+
+class TestMachineLogResponse(BaseModel):
+    id: int
+    machine_id: int
+    machine_name: Optional[str] = None
+    user_id: Optional[int] = None
+    username: Optional[str] = None
+    action: str
+    detail: Optional[str] = None
+    created_at: Optional[UtcDatetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TestMachineLogListResponse(BaseModel):
+    items: List[TestMachineLogResponse]
+    total: int

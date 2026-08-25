@@ -85,3 +85,34 @@ class LoginLog(Base):
     ip_address = Column(String(50), nullable=True)
     success = Column(Boolean, default=True, nullable=False)
     message = Column(String(200), nullable=True)
+
+
+class TestMachine(Base):
+    __tablename__ = "test_machines"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    ip_address = Column(String(50), nullable=False)
+    teamviewer_id = Column(String(50), nullable=True)
+    status = Column(String(20), default="unknown", nullable=False)
+    # Comma-separated tags, e.g. "regression,smoke". Kept as a plain string
+    # for SQLite simplicity; serialized as a list in the API layer.
+    tags = Column(String(200), nullable=True)
+    # True = admin manually locked the machine (busy and not occupiable).
+    # A machine occupied by a user via the occupy flow is NOT locked.
+    locked = Column(Boolean, default=False, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+    updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+
+
+class TestMachineLog(Base):
+    __tablename__ = "test_machine_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    machine_id = Column(Integer, nullable=False)
+    machine_name = Column(String(100), nullable=True)
+    user_id = Column(Integer, nullable=True)
+    username = Column(String(100), nullable=True)
+    action = Column(String(50), nullable=False)  # occupy / release / auto_release / lock / unlock / create / update / delete
+    detail = Column(String(500), nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
