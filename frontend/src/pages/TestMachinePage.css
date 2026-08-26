@@ -570,6 +570,57 @@
   color: var(--text-secondary);
 }
 
+/* Copy row (occupy modal) */
+.tm-copy-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tm-copy-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--bg-muted);
+  flex: 1;
+  min-width: 0;
+  user-select: all;
+}
+
+.tm-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tm-copy-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent-dark);
+  background: var(--accent-light);
+}
+
+.tm-copy-btn:active {
+  transform: scale(0.97);
+}
+
+.tm-copy-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
 /* Loading skeleton */
 .tm-skeleton {
   display: grid;

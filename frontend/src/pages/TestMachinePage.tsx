@@ -266,6 +266,15 @@ export default function TestMachinePage() {
     }
   };
 
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      message.success(`已复制：${text}`);
+    } catch {
+      message.error('复制失败，请手动选择复制');
+    }
+  };
+
   // ── logs ──
 
   const openLogs = (machine: TestMachine | null) => {
@@ -350,7 +359,10 @@ export default function TestMachinePage() {
                 key={opt.value}
                 className={`tm-status-option ${machine.status === opt.value ? 'active' : ''}`}
                 style={machine.status === opt.value ? { background: `${opt.color}18`, color: opt.color, borderColor: opt.color } : undefined}
-                onClick={() => handleStatusChange(machine, opt.value)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleStatusChange(machine, opt.value);
+                }}
               >
                 {opt.label}
               </button>
@@ -358,14 +370,14 @@ export default function TestMachinePage() {
           </div>
           <div className="tm-card-actions">
             {machine.locked ? (
-              <button className="tm-card-action-btn" onClick={() => handleUnlock(machine)} title="解锁">
+              <button className="tm-card-action-btn" onClick={(e) => { e.stopPropagation(); handleUnlock(machine); }} title="解锁">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 9.9-1" />
                 </svg>
               </button>
             ) : (
-              <button className="tm-card-action-btn" onClick={() => handleLock(machine)} title="锁定（忙碌且不可申请）">
+              <button className="tm-card-action-btn" onClick={(e) => { e.stopPropagation(); handleLock(machine); }} title="锁定（忙碌且不可申请）">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                   <path d="M7 11V7a5 5 0 0 1 10 0v4" />
@@ -373,14 +385,14 @@ export default function TestMachinePage() {
               </button>
             )}
             {machine.status === 'busy' && machine.occupier_username && (
-              <button className="tm-card-action-btn" onClick={() => handleRelease(machine)} title="强制释放占用">
+              <button className="tm-card-action-btn" onClick={(e) => { e.stopPropagation(); handleRelease(machine); }} title="强制释放占用">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
                   <line x1="12" y1="2" x2="12" y2="12" />
                 </svg>
               </button>
             )}
-            <button className="tm-card-action-btn" onClick={() => openLogs(machine)} title="查看日志">
+            <button className="tm-card-action-btn" onClick={(e) => { e.stopPropagation(); openLogs(machine); }} title="查看日志">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="8" y1="6" x2="21" y2="6" />
                 <line x1="8" y1="12" x2="21" y2="12" />
@@ -390,7 +402,7 @@ export default function TestMachinePage() {
                 <line x1="3" y1="18" x2="3.01" y2="18" />
               </svg>
             </button>
-            <button className="tm-card-action-btn" onClick={() => openEditModal(machine)} title="编辑">
+            <button className="tm-card-action-btn" onClick={(e) => { e.stopPropagation(); openEditModal(machine); }} title="编辑">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -398,7 +410,10 @@ export default function TestMachinePage() {
             </button>
             <button
               className="tm-card-action-btn delete"
-              onClick={() => handleDelete(machine)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(machine);
+              }}
               title="删除"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -416,7 +431,13 @@ export default function TestMachinePage() {
       return (
         <div className="tm-card-footer tm-card-footer-simple">
           <span className="tm-card-footer-note">正在使用中，请及时释放</span>
-          <button className="tm-release-btn" onClick={() => handleRelease(machine)}>
+          <button
+            className="tm-release-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRelease(machine);
+            }}
+          >
             释放占用
           </button>
         </div>
@@ -653,8 +674,42 @@ export default function TestMachinePage() {
           <div className="tm-form">
             <div className="tm-form-field">
               <label>IP 地址</label>
-              <span className="tm-mono" style={{ fontSize: 14 }}>{occupyTarget.ip_address}</span>
+              <div className="tm-copy-row">
+                <span className="tm-mono tm-copy-value">{occupyTarget.ip_address}</span>
+                <button
+                  type="button"
+                  className="tm-copy-btn"
+                  onClick={() => copyText(occupyTarget.ip_address)}
+                  title="复制 IP 地址"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  复制
+                </button>
+              </div>
             </div>
+            {occupyTarget.teamviewer_id && (
+              <div className="tm-form-field">
+                <label>TeamViewer ID</label>
+                <div className="tm-copy-row">
+                  <span className="tm-mono tm-copy-value">{occupyTarget.teamviewer_id}</span>
+                  <button
+                    type="button"
+                    className="tm-copy-btn"
+                    onClick={() => copyText(occupyTarget.teamviewer_id!)}
+                    title="复制 TeamViewer ID"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                    复制
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="tm-form-field">
               <label>占用时长（15 分钟为单位）</label>
               <div className="tm-occupy-units">
