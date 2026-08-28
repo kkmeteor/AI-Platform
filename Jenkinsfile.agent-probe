@@ -47,7 +47,7 @@ pipeline {
         )
         string(
             name: 'NSSM_URL',
-            defaultValue: '',
+            defaultValue: 'https://nssm.cc/release/nssm-2.24.zip',
             description: 'Optional URL to download nssm.zip from (looked up in InstallDir/PATH when empty)'
         )
     }
