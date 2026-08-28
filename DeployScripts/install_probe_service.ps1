@@ -90,13 +90,23 @@ function Resolve-Python {
         $candidates += $PythonPath
     }
     else {
-        $pyLauncher = (& py -3 -c "import sys; print(sys.executable)" 2>$null)
-        if ($pyLauncher -and (Test-Path $pyLauncher)) {
-            $candidates += $pyLauncher
+        # Probe py/python without letting native stderr (e.g. "No installed
+        # Python found!") become a terminating error under ErrorActionPreference
+        # 'Stop', which would skip the fallback to `python` on PATH.
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $pyLauncher = (& py -3 -c "import sys; print(sys.executable)" 2>$null | Select-Object -First 1)
+            if ($pyLauncher -and (Test-Path $pyLauncher)) {
+                $candidates += $pyLauncher
+            }
+            $pyOnPath = (& python -c "import sys; print(sys.executable)" 2>$null | Select-Object -First 1)
+            if ($pyOnPath -and (Test-Path $pyOnPath)) {
+                $candidates += $pyOnPath
+            }
         }
-        $pyOnPath = (& python -c "import sys; print(sys.executable)" 2>$null)
-        if ($pyOnPath -and (Test-Path $pyOnPath)) {
-            $candidates += $pyOnPath
+        finally {
+            $ErrorActionPreference = $prevEAP
         }
     }
 
@@ -114,7 +124,14 @@ function Resolve-Python {
 
 function Ensure-PyWin32 {
     param([string]$Python)
-    & $Python -c "import win32ts" 2>$null
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $Python -c "import win32ts" 2>$null
+    }
+    finally {
+        $ErrorActionPreference = $prevEAP
+    }
     if ($LASTEXITCODE -ne 0) {
         Write-Step "pywin32 not importable; installing via pip"
         Invoke-Checked -Script { & $Python -m pip install pywin32 } -What "pip install pywin32"
@@ -212,8 +229,11 @@ function Test-OnceRoundTrip {
 
 function Get-ServiceState {
     param([string]$Svc)
-    $svc = Get-Service -Name $Svc -ErrorAction SilentlyContinue
-    if ($svc) { return $svc.Status.ToString() }
+    # Note: never name the local variable like the parameter ($Svc) —
+    # PowerShell variables are case-insensitive, so the assignment would
+    # overwrite the parameter and make $result.Status null.
+    $result = Get-Service -Name $Svc -ErrorAction SilentlyContinue
+    if ($result) { return $result.Status.ToString() }
     return "NOT_FOUND"
 }
 

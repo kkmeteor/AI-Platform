@@ -27,7 +27,7 @@ pipeline {
         )
         string(
             name: 'SERVER_URL',
-            defaultValue: 'http://10.10.9.65:8000',
+            defaultValue: 'http://10.10.11.194:8000',
             description: 'Backend base URL (probe endpoint is appended: /api/test-machines/probe)'
         )
         string(
@@ -44,6 +44,11 @@ pipeline {
             name: 'PYTHON_PATH',
             defaultValue: '',
             description: 'Optional full path to python.exe on the agents (auto-detected when empty)'
+        )
+        string(
+            name: 'NSSM_URL',
+            defaultValue: '',
+            description: 'Optional URL to download nssm.zip from (looked up in InstallDir/PATH when empty)'
         )
     }
 
@@ -81,7 +86,8 @@ pipeline {
                                             -Token \$env:PROBE_TOKEN `
                                             -IntervalSec ${params.INTERVAL_SEC} `
                                             -IdleThresholdSec ${params.IDLE_THRESHOLD_SEC} `
-                                            -PythonPath '${params.PYTHON_PATH}'
+                                            -PythonPath '${params.PYTHON_PATH}' `
+                                            -NssmUrl '${params.NSSM_URL}'
                                         if (\$LASTEXITCODE -ne 0) { exit \$LASTEXITCODE }
                                     """
                                     echo "[AGENT-PROBE] ${agent}: RESULT=PASS"
