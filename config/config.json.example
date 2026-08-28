@@ -17,5 +17,8 @@
     "userPrefix": "YOURDOMAIN\\"
   },
   "jwtSecretKey": "change-me-to-a-random-secret",
-  "jwtExpireHours": 168
+  "jwtExpireHours": 168,
+  "probeToken": "change-me-to-a-shared-probe-token",
+  "probeOfflineAfterSeconds": 90,
+  "probeAutoRegister": true
 }

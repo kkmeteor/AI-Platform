@@ -9,6 +9,7 @@ import PortalPage from './pages/PortalPage';
 import SessionPage from './pages/SessionPage';
 import LoginPage from './pages/LoginPage';
 import UserManagePage from './pages/UserManagePage';
+import TestMachinePage from './pages/TestMachinePage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchDifyApps, fetchDifyAppDetail, fetchDifyAppWorkflow, fetchAllDatasets } from './services/api';
 import type { DifyApp, DifyAppTag } from './services/api';
@@ -295,6 +296,10 @@ function AppContent() {
 
     if (activeSection === 'rag') {
       return <RagPage />;
+    }
+
+    if (activeSection === 'test-machine') {
+      return <TestMachinePage />;
     }
 
     if (activeSection === 'users' && isAdmin) {
