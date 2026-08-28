@@ -10,6 +10,7 @@ import {
 import dayjs from 'dayjs';
 import type { Skill } from '../services/api';
 import { getDownloadUrl, togglePinSkill, isAdmin } from '../services/api';
+import { copyToClipboard } from '../utils/clipboard';
 
 const { Text, Paragraph, Title } = Typography;
 
@@ -28,21 +29,7 @@ export default function SkillDetailModal({ open, skill, onClose, onRefresh }: Sk
 
   const handleCopyLink = async () => {
     try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(downloadUrl);
-      } else {
-        // Fallback for non-secure contexts (HTTP in Docker/test env)
-        const textArea = document.createElement('textarea');
-        textArea.value = downloadUrl;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-9999px';
-        textArea.style.top = '-9999px';
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
+      await copyToClipboard(downloadUrl);
       message.success('链接已复制到剪贴板');
     } catch {
       message.error('复制失败，请手动复制');

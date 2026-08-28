@@ -72,9 +72,20 @@ function Write-Fail {
 function Invoke-Checked {
     <#
     Run a native command and throw when it exits non-zero.
+    Note: native stderr must not become a terminating error under
+    ErrorActionPreference 'Stop' (PowerShell 5.1 wraps it as
+    NativeCommandError), so probe with EAP temporarily relaxed and
+    decide purely on $LASTEXITCODE.
     #>
     param([scriptblock]$Script, [string]$What)
-    & $Script
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $Script
+    }
+    finally {
+        $ErrorActionPreference = $prevEAP
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "$What failed with exit code $LASTEXITCODE"
     }
@@ -138,35 +149,114 @@ function Ensure-PyWin32 {
     }
 }
 
+function Get-RegisteredNssm {
+    <#
+    Read the nssm.exe path the service was registered with (service ImagePath).
+    Reusing the exact same binary on update avoids "Can't open service!" when a
+    different nssm copy tries to open the existing service.
+    #>
+    param([string]$Svc)
+    if (-not $Svc) { return "" }
+    try {
+        $imagePath = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\$Svc" -Name ImagePath -ErrorAction Stop).ImagePath
+        if (-not $imagePath) { return "" }
+        # Quoted form: "C:\path\nssm.exe" nssm service <name>
+        if ($imagePath -match '"([^"]+\.exe)"') { return $Matches[1] }
+        # Unquoted form: C:\path\nssm.exe nssm service <name>
+        $first = ($imagePath -split "\s+")[0]
+        if ($first) { return $first }
+    }
+    catch { }
+    return ""
+}
+
+function Get-PeMachine {
+    <#
+    Read the PE Machine field of an exe file: 0x8664 = x64, 0x14C = x86.
+    Architecture is decided from the binary itself, never from folder names.
+    #>
+    param([string]$Path)
+    try {
+        $fs = [System.IO.File]::OpenRead($Path)
+        try {
+            $br = New-Object System.IO.BinaryReader($fs)
+            $fs.Seek(0x3C, [System.IO.SeekOrigin]::Begin) | Out-Null
+            $peOffset = $br.ReadInt32()
+            $fs.Seek($peOffset + 4, [System.IO.SeekOrigin]::Begin) | Out-Null
+            return $br.ReadUInt16()
+        }
+        finally {
+            $fs.Close()
+        }
+    }
+    catch {
+        return 0
+    }
+}
+
+function Get-NssmFileInfo {
+    param([string]$Path)
+    $arch = switch (Get-PeMachine $Path) {
+        0x8664 { "x64" }
+        0x14C  { "x86" }
+        default { "unknown-arch" }
+    }
+    $ver = (Get-Item $Path).VersionInfo.FileVersion
+    return "$arch v$ver"
+}
+
 function Resolve-Nssm {
     <#
-    Find nssm.exe: explicit -NssmUrl download, PATH, or <InstallDir>\nssm.exe.
+    Find nssm.exe, in priority order: the copy the service was registered
+    with (keeps the same binary on update), <InstallDir>\nssm.exe, PATH, or
+    download from -NssmUrl. The download is verified to be a real 64-bit
+    binary by its PE header, so the archive layout never matters.
     #>
-    $local = Join-Path $InstallDir "nssm.exe"
-    if (Test-Path $local) {
-        return $local
+    param([string]$Svc)
+    $resolved = ""
+    if ($Svc) {
+        $registered = Get-RegisteredNssm -Svc $Svc
+        if ($registered -and (Test-Path $registered)) {
+            $resolved = $registered
+        }
     }
-    $onPath = Get-Command nssm.exe -ErrorAction SilentlyContinue
-    if ($onPath) {
-        return $onPath.Source
+    if (-not $resolved) {
+        $local = Join-Path $InstallDir "nssm.exe"
+        if (Test-Path $local) {
+            $resolved = $local
+        }
     }
-    if ($NssmUrl) {
+    if (-not $resolved) {
+        $onPath = Get-Command nssm.exe -ErrorAction SilentlyContinue
+        if ($onPath) {
+            $resolved = $onPath.Source
+        }
+    }
+    if (-not $resolved -and $NssmUrl) {
         Write-Step "Downloading NSSM from $NssmUrl"
         $zip = Join-Path $env:TEMP "nssm.zip"
         Invoke-WebRequest -Uri $NssmUrl -OutFile $zip -UseBasicParsing
         $extract = Join-Path $env:TEMP "nssm-extract"
         if (Test-Path $extract) { Remove-Item $extract -Recurse -Force }
         Expand-Archive -Path $zip -DestinationPath $extract
-        $nssmExe = Get-ChildItem -Path $extract -Filter nssm.exe -Recurse |
-            Where-Object { $_.FullName -match "win64" } |
+        # Skip obvious 32-bit folders, then verify the PE Machine field so a
+        # mirror with a different archive layout still yields a true x64 copy.
+        $candidates = Get-ChildItem -Path $extract -Filter nssm.exe -Recurse |
+            Where-Object { $_.FullName -notmatch "\\win32(\\|$)" }
+        $nssmExe = $candidates |
+            Where-Object { (Get-PeMachine $_.FullName) -eq 0x8664 } |
             Select-Object -First 1
         if (-not $nssmExe) {
-            throw "nssm.exe (win64) not found inside $NssmUrl archive"
+            throw "No 64-bit nssm.exe inside $NssmUrl archive (verified by PE header)"
         }
         Copy-Item $nssmExe.FullName $local -Force
-        return $local
+        $resolved = $local
     }
-    throw "nssm.exe not found on PATH or in $InstallDir. Pass -NssmUrl or place nssm.exe on PATH."
+    if (-not $resolved) {
+        throw "nssm.exe not found on PATH or in $InstallDir. Pass -NssmUrl or place nssm.exe on PATH."
+    }
+    Write-Step "Using nssm: $resolved ($(Get-NssmFileInfo $resolved))"
+    return $resolved
 }
 
 function Set-ServiceEnvironment {
@@ -237,6 +327,45 @@ function Get-ServiceState {
     return "NOT_FOUND"
 }
 
+function Repair-ServiceImagePath {
+    <#
+    nssm services must be launched as "<nssm.exe>" nssm service <name>.
+    A bare ImagePath (stripped by security tools or manual edits) makes the
+    service exit immediately on start and makes nssm set/get fail. Restore
+    the full command line when the 'nssm service' marker is missing.
+    #>
+    param([string]$Svc, [string]$Nssm)
+    try {
+        $imagePath = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\$Svc" -Name ImagePath -ErrorAction Stop).ImagePath
+        if (-not $imagePath) { return }
+        if ($imagePath -match "\bnssm service\b") { return }
+        Write-Step "Service '$Svc' ImagePath is missing 'nssm service' arguments; repairing it"
+        $binPath = "`"$Nssm`" nssm service $Svc"
+        & sc.exe config $Svc "binPath= $binPath" | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "sc.exe config failed to repair ImagePath (exit code $LASTEXITCODE)"
+        }
+        Write-Step "ImagePath repaired: $binPath"
+    }
+    catch {
+        Write-Fail "Failed to inspect/repair service ImagePath: $($_.Exception.Message)"
+        throw
+    }
+}
+
+function Assert-Admin {
+    <#
+    nssm install/set/start/remove all OpenService() the target service with
+    SERVICE_ALL_ACCESS, which fails with "Can't open service!" when the
+    current process is not running as an administrator. Fail early with an
+    actionable message instead of a cryptic native error.
+    #>
+    $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw "Current process is not running as administrator. The Jenkins agent service must run with an administrator account to manage service '$ServiceName' (nssm would fail with 'Can't open service! / access denied')."
+    }
+}
+
 # ---------------------------------------------------------------------------
 # Resolve common inputs
 # ---------------------------------------------------------------------------
@@ -282,12 +411,14 @@ switch ($Action) {
     }
 
     "uninstall" {
+        Assert-Admin
         $state = Get-ServiceState $ServiceName
         if ($state -eq "NOT_FOUND") {
             Write-Step "Service '$ServiceName' not installed; nothing to do"
             break
         }
-        $nssm = Resolve-Nssm
+        $nssm = Resolve-Nssm -Svc $ServiceName
+        Repair-ServiceImagePath -Svc $ServiceName -Nssm $nssm
         if ($state -eq "Running") {
             Write-Step "Stopping service '$ServiceName'"
             Invoke-Checked -Script { & $nssm stop $ServiceName } -What "nssm stop"
@@ -299,17 +430,20 @@ switch ($Action) {
     }
 
     "restart" {
+        Assert-Admin
         $state = Get-ServiceState $ServiceName
         if ($state -eq "NOT_FOUND") {
             throw "Service '$ServiceName' is not installed; run with -Action install first"
         }
-        $nssm = Resolve-Nssm
+        $nssm = Resolve-Nssm -Svc $ServiceName
+        Repair-ServiceImagePath -Svc $ServiceName -Nssm $nssm
         Invoke-Checked -Script { & $nssm restart $ServiceName } -What "nssm restart"
         Write-Host "SERVICE_STATE: $(Get-ServiceState $ServiceName)"
         break
     }
 
     "install" {
+        Assert-Admin
         if ((Get-ServiceState $ServiceName) -ne "NOT_FOUND") {
             Write-Step "Service '$ServiceName' already exists; running as update"
             & $MyInvocation.MyCommand.Path -Action update -ServerUrl $ServerUrl -Token $Token `
@@ -331,15 +465,21 @@ switch ($Action) {
         Write-Step "Using python: $($py.Python)"
         Ensure-PyWin32 $py.Python
         $nssm = Resolve-Nssm
-        Write-Step "Using nssm: $nssm"
 
         # 3. Register the service (pythonw headless).
         $agentScript = Join-Path $InstallDir "is-busy.py"
         Invoke-Checked -Script { & $nssm install $ServiceName $py.PythonW $agentScript } -What "nssm install"
 
         # 4. Inject environment + logging + crash-restart policy.
-        Set-ServiceEnvironment -Nssm $nssm -Svc $ServiceName -Server $ServerUrl `
-            -ProbeToken $Token -Agent $AgentName -LogsDir $logsDir
+        try {
+            Set-ServiceEnvironment -Nssm $nssm -Svc $ServiceName -Server $ServerUrl `
+                -ProbeToken $Token -Agent $AgentName -LogsDir $logsDir
+        }
+        catch {
+            Write-Fail "Service config update failed: $($_.Exception.Message)"
+            Write-Fail "Diagnostics: nssm=$nssm. Run 'sc.exe qc $ServiceName' on the agent and verify the ImagePath. If nssm reports 'Can't open service! / access denied', the process is not running with administrator rights."
+            throw
+        }
 
         # 5. Start and confirm.
         Invoke-Checked -Script { & $nssm start $ServiceName } -What "nssm start"
@@ -357,6 +497,7 @@ switch ($Action) {
     }
 
     "update" {
+        Assert-Admin
         if ((Get-ServiceState $ServiceName) -eq "NOT_FOUND") {
             Write-Step "Service '$ServiceName' not installed; falling back to install"
             & $MyInvocation.MyCommand.Path -Action install -ServerUrl $ServerUrl -Token $Token `
@@ -373,9 +514,17 @@ switch ($Action) {
         Copy-Item $SourceScript (Join-Path $InstallDir "is-busy.py") -Force
 
         $py = Resolve-Python
-        $nssm = Resolve-Nssm
-        Set-ServiceEnvironment -Nssm $nssm -Svc $ServiceName -Server $ServerUrl `
-            -ProbeToken $Token -Agent $AgentName -LogsDir $logsDir
+        $nssm = Resolve-Nssm -Svc $ServiceName
+        Repair-ServiceImagePath -Svc $ServiceName -Nssm $nssm
+        try {
+            Set-ServiceEnvironment -Nssm $nssm -Svc $ServiceName -Server $ServerUrl `
+                -ProbeToken $Token -Agent $AgentName -LogsDir $logsDir
+        }
+        catch {
+            Write-Fail "Service config update failed: $($_.Exception.Message)"
+            Write-Fail "Diagnostics: nssm=$nssm. Run 'sc.exe qc $ServiceName' on the agent and verify the ImagePath. If nssm reports 'Can't open service! / access denied', the process is not running with administrator rights."
+            throw
+        }
 
         Invoke-Checked -Script { & $nssm restart $ServiceName } -What "nssm restart"
         Write-Host "SERVICE_STATE: $(Get-ServiceState $ServiceName)"
