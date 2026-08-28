@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "后端开发规范入口：Pre-Development Checklist 与 Quality Check"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "ORM 模式与 migrate_db 迁移约定，新增 test_machines 列时遵循"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "probe 端点鉴权失败与异常处理遵循项目约定"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "探针上报日志（跳变日志）遵循日志规范"}

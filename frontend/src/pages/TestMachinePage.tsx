@@ -51,6 +51,15 @@ function formatRemaining(seconds: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function formatHeartbeat(value: string | null): string | null {
+  // Backend stores last_seen_at as UTC ISO (e.g. 2026-08-28T03:49:11Z);
+  // convert to local HH:MM:SS for display.
+  if (!value) return null;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString('zh-CN', { hour12: false });
+}
+
 export default function TestMachinePage() {
   const { isAdmin, user } = useAuth();
   const [machines, setMachines] = useState<TestMachine[]>([]);
@@ -330,6 +339,11 @@ export default function TestMachinePage() {
       >
         <span className="tm-status-dot" style={{ background: statusInfo.color }} />
         {label}
+        {formatHeartbeat(machine.last_seen_at) && (
+          <span className="tm-heartbeat" title="最后心跳时间">
+            {formatHeartbeat(machine.last_seen_at)}
+          </span>
+        )}
       </span>
     );
   };
@@ -512,6 +526,12 @@ export default function TestMachinePage() {
             <span className="tm-card-label">IP 地址</span>
             <span className="tm-card-value tm-mono">{machine.ip_address}</span>
           </div>
+          {machine.hostname && machine.hostname !== machine.name && (
+            <div className="tm-card-field">
+              <span className="tm-card-label">主机名</span>
+              <span className="tm-card-value tm-mono">{machine.hostname}</span>
+            </div>
+          )}
           {machine.teamviewer_id && (
             <div className="tm-card-field">
               <span className="tm-card-label">TeamViewer</span>

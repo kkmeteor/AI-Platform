@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Annotated, Optional, List
+from typing import Annotated, Optional, List, Literal
 from pydantic import BaseModel, BeforeValidator, field_validator
 
 
@@ -253,6 +253,11 @@ class TestMachineResponse(BaseModel):
     expires_at: Optional[UtcDatetime] = None
     remaining_seconds: Optional[int] = None
     auto_renew: Optional[bool] = None
+    # Agent probe metadata (reported by is-busy.py)
+    hostname: Optional[str] = None
+    last_seen_at: Optional[UtcDatetime] = None
+    last_idle_seconds: Optional[float] = None
+    last_rdp_active: Optional[bool] = None
     created_at: Optional[UtcDatetime] = None
     updated_at: Optional[UtcDatetime] = None
 
@@ -274,6 +279,30 @@ class TestMachineResponse(BaseModel):
 class TestMachineOccupyRequest(BaseModel):
     duration_minutes: int
     auto_renew: bool = False
+
+
+# ---- Agent Probe Schemas ----
+
+class ProbeReport(BaseModel):
+    """Payload sent by the is-busy.py agent service running on each machine."""
+
+    hostname: str
+    ip_address: str
+    status: Literal["busy", "idle"]
+    idle_seconds: float = 0.0
+    rdp_active: bool = False
+    client_time: Optional[float] = None  # epoch seconds (UTC)
+    version: str = "1.0.0"
+
+
+class ProbeReportResponse(BaseModel):
+    """Response echoed back to the agent so it can self-verify the round trip."""
+
+    ok: bool
+    machine_id: Optional[int] = None
+    name: Optional[str] = None
+    status: Optional[str] = None
+    reason: Optional[str] = None
 
 
 class TestMachineLogResponse(BaseModel):

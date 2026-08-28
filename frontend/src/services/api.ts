@@ -453,6 +453,11 @@ export interface TestMachine {
   expires_at: string | null;
   remaining_seconds: number | null;
   auto_renew: boolean | null;
+  // Agent probe metadata (reported by is-busy.py heartbeat)
+  hostname: string | null;
+  last_seen_at: string | null;
+  last_idle_seconds: number | null;
+  last_rdp_active: boolean | null;
   created_at: string | null;
   updated_at: string | null;
 }

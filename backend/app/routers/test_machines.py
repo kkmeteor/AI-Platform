@@ -1,10 +1,13 @@
+import hmac
 import logging
 import time
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 
 from app.auth import require_role
+from app.config import get_settings
 from app.database import get_db
 from app.models import TestMachine, TestMachineLog, User
 from app.occupancy import (
@@ -19,12 +22,37 @@ from app.schemas import (
     TestMachineResponse,
     TestMachineOccupyRequest,
     TestMachineLogListResponse,
+    ProbeReport,
+    ProbeReportResponse,
 )
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+settings = get_settings()
 
 VALID_STATUSES = {"busy", "idle", "unknown", "offline"}
+
+
+def _utc_now() -> datetime:
+    """Naive-UTC datetime (matches how SQLite stores UTC timestamps)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def require_probe_token(x_token: str = Header(default="", alias="X-Probe-Token")) -> bool:
+    """Validate the shared agent probe token (X-Probe-Token header).
+
+    Independent of the user JWT flow: agent services run headless and cannot
+    hold a user session. A missing configured token means the endpoint is
+    intentionally disabled.
+    """
+    if not settings.probe_token:
+        raise HTTPException(
+            status_code=503,
+            detail="Probe endpoint not configured (probe_token is empty)",
+        )
+    if not x_token or not hmac.compare_digest(x_token, settings.probe_token):
+        raise HTTPException(status_code=401, detail="Invalid probe token")
+    return True
 
 
 # ── helpers ──
@@ -53,6 +81,11 @@ def _to_response(machine: TestMachine, occ=None) -> dict:
         "expires_at": None,
         "remaining_seconds": None,
         "auto_renew": None,
+        # Agent probe metadata
+        "hostname": machine.hostname,
+        "last_seen_at": machine.last_seen_at,
+        "last_idle_seconds": machine.last_idle_seconds,
+        "last_rdp_active": machine.last_rdp_active,
         "created_at": machine.created_at,
         "updated_at": machine.updated_at,
     }
@@ -218,6 +251,105 @@ def delete_test_machine(
     db.delete(machine)
     db.commit()
     return {"detail": "Test machine deleted successfully"}
+
+
+# ── agent probe flow (is-busy.py heartbeat) ──
+
+def _apply_probe_report(db: Session, machine: TestMachine, report: ProbeReport) -> str:
+    """Apply a probe report to a machine; returns the effective display status.
+
+    Status priority (higher wins):
+      1. Admin lock (locked=True)         -> busy
+      2. Live occupation (occupation_cache) -> busy
+      3. Physical busy reported by probe   -> busy
+      4. otherwise                         -> idle
+
+    Occupation/lock states are deliberate and must never be clobbered by a
+    physical-idle report. Only the status field is touched by the probe;
+    occupancy/lock state is managed by the existing JWT flows.
+    """
+    machine.hostname = report.hostname
+    machine.last_seen_at = _utc_now()
+    machine.last_idle_seconds = report.idle_seconds
+    machine.last_rdp_active = report.rdp_active
+
+    if machine.locked:
+        effective = "busy"
+    elif occupation_cache.get(machine.id) is not None:
+        effective = "busy"
+    elif report.status == "busy":
+        effective = "busy"
+    else:
+        effective = "idle"
+
+    if machine.status != effective:
+        old = machine.status
+        machine.status = effective
+        _add_log(
+            db,
+            machine,
+            None,
+            "probe",
+            (
+                f"探针上报 {report.status}（空闲 {report.idle_seconds:.0f}s，"
+                f"RDP {'活跃' if report.rdp_active else '无'}）→ {effective}（原 {old}）"
+            ),
+        )
+        logger.info(
+            "Probe %s (id=%s) status %s -> %s",
+            machine.name,
+            machine.id,
+            old,
+            effective,
+        )
+    return effective
+
+
+@router.post("/test-machines/probe", response_model=ProbeReportResponse)
+def report_probe(
+    payload: ProbeReport,
+    db: Session = Depends(get_db),
+    _: bool = Depends(require_probe_token),
+):
+    """Receive a heartbeat/status report from the is-busy.py agent service.
+
+    The agent self-identifies via ip_address (primary matching key) and
+    hostname. Unknown machines are auto-registered when probe_auto_register is
+    enabled; otherwise the report is acknowledged but ignored.
+    """
+    machine = (
+        db.query(TestMachine)
+        .filter(TestMachine.ip_address == payload.ip_address)
+        .first()
+    )
+    if machine is None and payload.hostname:
+        machine = (
+            db.query(TestMachine)
+            .filter(TestMachine.hostname == payload.hostname)
+            .first()
+        )
+    if machine is None:
+        if not settings.probe_auto_register:
+            return ProbeReportResponse(ok=False, reason="unknown_machine")
+        machine = TestMachine(
+            name=payload.hostname or payload.ip_address,
+            ip_address=payload.ip_address,
+            hostname=payload.hostname or None,
+            status="unknown",
+        )
+        db.add(machine)
+        db.commit()
+        db.refresh(machine)
+        logger.info(
+            "Probe auto-registered machine %s (ip=%s)", machine.name, machine.ip_address
+        )
+
+    effective = _apply_probe_report(db, machine, payload)
+    db.commit()
+    db.refresh(machine)
+    return ProbeReportResponse(
+        ok=True, machine_id=machine.id, name=machine.name, status=effective
+    )
 
 
 # ── occupation flow ──

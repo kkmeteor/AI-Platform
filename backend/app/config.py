@@ -98,6 +98,17 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_hours: int = _json_defaults.get("jwtExpireHours", 8)
 
+    # ── Test machine probe (agent idle-status reporting) ──
+    # Shared static token that agent services send in the X-Probe-Token header.
+    # Keep it out of git (config.json is gitignored; set via PROBE_TOKEN env).
+    probe_token: str = _json_defaults.get("probeToken", "")
+    # Mark a machine offline when no heartbeat for this many seconds (default 90 = 3 x 30s heartbeat).
+    probe_offline_after_seconds: int = _json_defaults.get(
+        "probeOfflineAfterSeconds", 90
+    )
+    # Auto-register a machine on its first probe report when it is not yet in the DB.
+    probe_auto_register: bool = _json_defaults.get("probeAutoRegister", True)
+
     model_config = {"extra": "ignore"}
 
 

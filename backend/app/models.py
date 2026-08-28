@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, TIMESTAMP, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, Float, TIMESTAMP, ForeignKey
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -101,6 +101,11 @@ class TestMachine(Base):
     # True = admin manually locked the machine (busy and not occupiable).
     # A machine occupied by a user via the occupy flow is NOT locked.
     locked = Column(Boolean, default=False, nullable=False)
+    # ── Agent probe metadata (reported by is-busy.py running on the machine) ──
+    hostname = Column(String(100), nullable=True)
+    last_seen_at = Column(TIMESTAMP, nullable=True)
+    last_idle_seconds = Column(Float, nullable=True)
+    last_rdp_active = Column(Boolean, default=False, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
     updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
 

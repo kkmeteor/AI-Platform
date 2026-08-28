@@ -23,7 +23,7 @@ import logging
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -280,3 +280,98 @@ def start_reaper(app) -> None:
     async def _start_reaper() -> None:
         repair_orphaned_busy()
         asyncio.get_event_loop().create_task(_auto_release_loop())
+
+
+# ---------------------------------------------------------------------------
+# Offline detection (agent probe heartbeat timeout)
+# ---------------------------------------------------------------------------
+
+OFFLINE_REAPER_INTERVAL_SECONDS = 15
+
+
+def _mark_stale_machines_offline(cutoff_seconds: int) -> None:
+    """One pass: flip machines whose last probe heartbeat is older than cutoff.
+
+    Admin-locked and currently-occupied machines are never flipped to
+    offline: lock is a deliberate admin state and occupied machines are owned
+    by the occupation reaper.
+    """
+    from app.database import SessionLocal
+    from app.models import TestMachine, TestMachineLog
+
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=cutoff_seconds)
+    db = SessionLocal()
+    try:
+        candidates = (
+            db.query(TestMachine)
+            .filter(
+                TestMachine.last_seen_at.isnot(None),
+                TestMachine.locked.is_(False),
+            )
+            .all()
+        )
+        for machine in candidates:
+            # Live occupation keeps the machine busy; the occupation reaper
+            # owns its lifecycle instead.
+            if occupation_cache.get(machine.id) is not None:
+                continue
+            try:
+                last_seen = machine.last_seen_at
+                if isinstance(last_seen, str):
+                    last_seen = datetime.strptime(
+                        last_seen, "%Y-%m-%d %H:%M:%S"
+                    ).replace(tzinfo=timezone.utc)
+                elif isinstance(last_seen, datetime):
+                    if last_seen.tzinfo is None:
+                        last_seen = last_seen.replace(tzinfo=timezone.utc)
+                else:
+                    continue
+            except (ValueError, TypeError):
+                continue
+            if last_seen >= cutoff or machine.status == "offline":
+                continue
+            machine.status = "offline"
+            db.add(
+                TestMachineLog(
+                    machine_id=machine.id,
+                    machine_name=machine.name,
+                    action="probe_offline",
+                    detail=(f"超过 {cutoff_seconds}s 未收到探针心跳，判定离线"),
+                )
+            )
+            logger.info(
+                "Marked machine %s (id=%s) offline: last seen %s",
+                machine.name,
+                machine.id,
+                machine.last_seen_at,
+            )
+        db.commit()
+    finally:
+        db.close()
+
+
+def _offline_check_loop() -> None:
+    """Background task: mark machines offline when their probe heartbeat lapses."""
+    from app.config import get_settings
+
+    async def run() -> None:
+        logger.info("Test machine offline reaper started")
+        while True:
+            try:
+                await asyncio.sleep(OFFLINE_REAPER_INTERVAL_SECONDS)
+                _mark_stale_machines_offline(get_settings().probe_offline_after_seconds)
+            except asyncio.CancelledError:
+                logger.info("Test machine offline reaper stopped")
+                raise
+            except Exception:
+                logger.exception("Error in test machine offline reaper")
+
+    return run()
+
+
+def start_offline_reaper(app) -> None:
+    """Hook into FastAPI startup to launch the offline-detection task."""
+
+    @app.on_event("startup")
+    async def _start_offline_reaper() -> None:
+        asyncio.get_event_loop().create_task(_offline_check_loop())

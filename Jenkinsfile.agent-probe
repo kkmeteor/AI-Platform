@@ -1,0 +1,112 @@
+// ============================================
+// DCloud Market - Agent Probe Batch Deployment Pipeline
+// Deploys the is-busy.py probe agent service to many Jenkins agent nodes
+// (test machines) in parallel via DeployScripts/install_probe_service.ps1.
+//
+// Actions: install | update | uninstall | status | restart
+// Token comes from Jenkins Credentials (id: probe-token), never hardcoded.
+// ============================================
+
+pipeline {
+    agent none
+
+    environment {
+        PROBE_TOKEN = credentials('probe-token')
+    }
+
+    parameters {
+        string(
+            name: 'AGENTS',
+            defaultValue: '',
+            description: 'Comma-separated Jenkins node names to deploy to, e.g. "tengfei-test,win-agent-01" (required)'
+        )
+        choice(
+            name: 'ACTION',
+            choices: ['install', 'update', 'uninstall', 'status', 'restart'],
+            description: 'Operation to run on every selected agent'
+        )
+        string(
+            name: 'SERVER_URL',
+            defaultValue: 'http://10.10.9.65:8000',
+            description: 'Backend base URL (probe endpoint is appended: /api/test-machines/probe)'
+        )
+        string(
+            name: 'IDLE_THRESHOLD_SEC',
+            defaultValue: '300',
+            description: 'Idle threshold for the busy verdict (seconds)'
+        )
+        string(
+            name: 'INTERVAL_SEC',
+            defaultValue: '30',
+            description: 'Heartbeat interval when nothing changed (seconds)'
+        )
+        string(
+            name: 'PYTHON_PATH',
+            defaultValue: '',
+            description: 'Optional full path to python.exe on the agents (auto-detected when empty)'
+        )
+    }
+
+    stages {
+        stage('Validate') {
+            steps {
+                script {
+                    def agents = (params.AGENTS ?: '').split(',').collect { it.trim() }.findAll { it }
+                    if (!agents) {
+                        error 'AGENTS parameter is required (comma-separated node names)'
+                    }
+                    echo "Dispatching ACTION=${params.ACTION} to ${agents.size()} agent(s): ${agents.join(', ')}"
+                }
+            }
+        }
+
+        stage('Dispatch') {
+            steps {
+                script {
+                    def agents = (params.AGENTS ?: '').split(',').collect { it.trim() }.findAll { it }
+                    def probeUrl = "${params.SERVER_URL}/api/test-machines/probe"
+                    def branches = [:]
+
+                    for (agent in agents) {
+                        branches[agent] = {
+                            node(agent) {
+                                try {
+                                    checkout scm
+                                    echo "[AGENT-PROBE] === ${agent}: ACTION=${params.ACTION} ==="
+                                    powershell """
+                                        \$ErrorActionPreference = 'Stop'
+                                        & '${env.WORKSPACE}\\DeployScripts\\install_probe_service.ps1' `
+                                            -Action '${params.ACTION}' `
+                                            -ServerUrl '${probeUrl}' `
+                                            -Token \$env:PROBE_TOKEN `
+                                            -IntervalSec ${params.INTERVAL_SEC} `
+                                            -IdleThresholdSec ${params.IDLE_THRESHOLD_SEC} `
+                                            -PythonPath '${params.PYTHON_PATH}'
+                                        if (\$LASTEXITCODE -ne 0) { exit \$LASTEXITCODE }
+                                    """
+                                    echo "[AGENT-PROBE] ${agent}: RESULT=PASS"
+                                } catch (Exception e) {
+                                    echo "[AGENT-PROBE] ${agent}: RESULT=FAIL - ${e.getMessage()}"
+                                    throw e
+                                } finally {
+                                    cleanWs()
+                                }
+                            }
+                        }
+                    }
+
+                    parallel branches
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "[AGENT-PROBE] Pipeline finished. Check per-agent RESULT=PASS/FAIL markers in the console log."
+        }
+        failure {
+            echo "[AGENT-PROBE] One or more agents failed. Fix the failing agent(s) and re-run."
+        }
+    }
+}

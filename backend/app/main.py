@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine, Base, get_db
-from app.occupancy import start_reaper
+from app.occupancy import start_reaper, start_offline_reaper
 from app.routers import skills, dify, mcp, portal, auth, users, test_machines
 
 settings = get_settings()
@@ -41,6 +41,8 @@ app.include_router(test_machines.router, prefix="/api")
 
 # Background task: auto-release expired test machine occupations.
 start_reaper(app)
+# Background task: mark machines offline when their probe heartbeat lapses.
+start_offline_reaper(app)
 
 
 @app.on_event("startup")

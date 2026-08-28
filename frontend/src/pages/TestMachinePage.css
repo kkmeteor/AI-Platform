@@ -234,6 +234,16 @@
   flex-shrink: 0;
 }
 
+.tm-heartbeat {
+  padding-left: 6px;
+  margin-left: 2px;
+  border-left: 1px solid currentColor;
+  opacity: 0.75;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 400;
+}
+
 .tm-status-dot {
   width: 7px;
   height: 7px;

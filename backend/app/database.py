@@ -145,6 +145,10 @@ def migrate_db():
                 status VARCHAR(20) NOT NULL DEFAULT 'unknown',
                 tags VARCHAR(200),
                 locked BOOLEAN NOT NULL DEFAULT 0,
+                hostname VARCHAR(100),
+                last_seen_at TIMESTAMP,
+                last_idle_seconds REAL,
+                last_rdp_active BOOLEAN NOT NULL DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -156,6 +160,11 @@ def migrate_db():
         test_machine_migrations = [
             ("locked", "BOOLEAN NOT NULL DEFAULT 0"),
             ("tags", "VARCHAR(200)"),
+            # Agent probe metadata (is-busy.py reports)
+            ("hostname", "VARCHAR(100)"),
+            ("last_seen_at", "TIMESTAMP"),
+            ("last_idle_seconds", "REAL"),
+            ("last_rdp_active", "BOOLEAN NOT NULL DEFAULT 0"),
         ]
         for col_name, col_type in test_machine_migrations:
             if col_name not in existing_columns:
