@@ -277,11 +277,12 @@ export default function TestMachinePage() {
   };
 
   const copyText = async (text: string) => {
-    try {
-      await copyToClipboard(text);
+    const result = await copyToClipboard(text);
+    if (result === 'success') {
       message.success(`已复制：${text}`);
-    } catch {
-      message.error('复制失败，请手动选择复制');
+    } else {
+      // 浏览器禁止自动复制（HTTP / iframe 权限受限等），界面已展示原文，提示手动复制
+      message.warning('当前浏览器禁止自动复制，请手动选中复制');
     }
   };
 

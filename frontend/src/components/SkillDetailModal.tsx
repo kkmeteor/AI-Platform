@@ -1,4 +1,6 @@
-import { Modal, Typography, Tag, Divider, Space, Button, message, Switch } from 'antd';
+import { useState, useRef } from 'react';
+import { Modal, Typography, Tag, Divider, Space, Button, message, Switch, Input } from 'antd';
+import type { InputRef } from 'antd';
 import {
   UserOutlined,
   CloudDownloadOutlined,
@@ -27,13 +29,22 @@ export default function SkillDetailModal({ open, skill, onClose, onRefresh }: Sk
   const admin = isAdmin();
   const downloadUrl = `${window.location.origin}${getDownloadUrl(skill.id)}`;
 
+  const [manualCopyOpen, setManualCopyOpen] = useState(false);
+  const manualCopyInputRef = useRef<InputRef>(null);
+
   const handleCopyLink = async () => {
-    try {
-      await copyToClipboard(downloadUrl);
+    const result = await copyToClipboard(downloadUrl);
+    if (result === 'success') {
       message.success('链接已复制到剪贴板');
-    } catch {
-      message.error('复制失败，请手动复制');
+    } else {
+      // 浏览器禁止自动复制（HTTP / iframe 权限受限等），提供手动复制兜底
+      setManualCopyOpen(true);
     }
+  };
+
+  const handleManualCopyOpen = () => {
+    // 弹窗打开后自动选中链接，用户直接 Ctrl+C 即可
+    requestAnimationFrame(() => manualCopyInputRef.current?.select());
   };
 
   const handleTogglePin = async (checked: boolean) => {
@@ -148,6 +159,25 @@ export default function SkillDetailModal({ open, skill, onClose, onRefresh }: Sk
           </Text>
         </Space>
       </div>
+
+      {/* 自动复制被浏览器禁止时的手动复制兜底 */}
+      <Modal
+        title="手动复制链接"
+        open={manualCopyOpen}
+        onCancel={() => setManualCopyOpen(false)}
+        afterOpenChange={(open) => open && handleManualCopyOpen()}
+        footer={
+          <Button type="primary" onClick={() => setManualCopyOpen(false)}>
+            完成
+          </Button>
+        }
+        width={480}
+      >
+        <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+          当前浏览器禁止自动复制，链接已自动选中，请按 Ctrl+C（Mac: Cmd+C）复制：
+        </Text>
+        <Input ref={manualCopyInputRef} value={downloadUrl} readOnly />
+      </Modal>
     </Modal>
   );
 }
