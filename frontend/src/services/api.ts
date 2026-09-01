@@ -444,6 +444,7 @@ export interface TestMachine {
   name: string;
   ip_address: string;
   teamviewer_id: string | null;
+  rdp_username: string | null;
   status: 'busy' | 'idle' | 'unknown' | 'offline';
   locked: boolean;
   tags: string[];
@@ -466,6 +467,7 @@ export interface TestMachineCreate {
   name: string;
   ip_address: string;
   teamviewer_id?: string;
+  rdp_username?: string;
   status?: string;
   locked?: boolean;
   tags?: string[];
@@ -475,6 +477,7 @@ export interface TestMachineUpdate {
   name?: string;
   ip_address?: string;
   teamviewer_id?: string;
+  rdp_username?: string;
   status?: string;
   locked?: boolean;
   tags?: string[];

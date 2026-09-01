@@ -94,6 +94,8 @@ class TestMachine(Base):
     name = Column(String(100), nullable=False)
     ip_address = Column(String(50), nullable=False)
     teamviewer_id = Column(String(50), nullable=True)
+    # Remote desktop login username, pre-filled into generated .rdp files.
+    rdp_username = Column(String(100), nullable=True)
     status = Column(String(20), default="unknown", nullable=False)
     # Comma-separated tags, e.g. "regression,smoke". Kept as a plain string
     # for SQLite simplicity; serialized as a list in the API layer.

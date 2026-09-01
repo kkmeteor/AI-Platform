@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Modal, message, Table, Switch, Select } from 'antd';
+import { Modal, message, Table, Switch, Select, Button } from 'antd';
 import {
   fetchTestMachines,
   createTestMachine,
@@ -61,6 +61,36 @@ function formatHeartbeat(value: string | null): string | null {
   return d.toLocaleTimeString('zh-CN', { hour12: false });
 }
 
+// Windows 文件名非法字符：\ / : * ? " < > |
+function sanitizeFileName(name: string): string {
+  return name.replace(/[\\/:*?"<>|]/g, '_').trim() || 'test-machine';
+}
+
+/**
+ * 生成并下载 .rdp 远程桌面配置文件。
+ * Windows 系统默认将 .rdp 关联到 mstsc（远程桌面连接），双击文件即打开且
+ * "计算机"地址框自动填入目标 IP；内容为纯 ASCII，UTF-8 无 BOM 与 ANSI 等价。
+ * 传入 rdp_username 时额外写入 username 行，mstsc 自动填入远程用户名。
+ * 返回实际下载的文件名（供提示文案使用）。
+ */
+function downloadRdpFile(machineName: string, ipAddress: string, username?: string | null): string {
+  const fileName = `${sanitizeFileName(machineName)}.rdp`;
+  const lines = [`full address:s:${ipAddress}`];
+  if (username && username.trim()) {
+    lines.push(`username:s:${username.trim()}`);
+  }
+  const blob = new Blob([lines.join('\n') + '\n'], { type: 'application/rdp' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return fileName;
+}
+
 export default function TestMachinePage() {
   const { isAdmin, user } = useAuth();
   const [machines, setMachines] = useState<TestMachine[]>([]);
@@ -74,13 +104,15 @@ export default function TestMachinePage() {
     name: '',
     ip_address: '',
     teamviewer_id: '',
+    rdp_username: '',
     status: 'unknown',
     tags: [],
   });
 
   // Occupy modal
   const [occupyTarget, setOccupyTarget] = useState<TestMachine | null>(null);
-  const [occupyUnits, setOccupyUnits] = useState(2);
+  // 占用时长为必选项：未选择前"确认占用"与"远程桌面连接"均不可用
+  const [occupyUnits, setOccupyUnits] = useState<number | null>(null);
   const [occupyAutoRenew, setOccupyAutoRenew] = useState(false);
   const [occupySubmitting, setOccupySubmitting] = useState(false);
 
@@ -134,7 +166,7 @@ export default function TestMachinePage() {
 
   const openAddModal = () => {
     setEditingMachine(null);
-    setFormData({ name: '', ip_address: '', teamviewer_id: '', status: 'unknown', tags: [] });
+    setFormData({ name: '', ip_address: '', teamviewer_id: '', rdp_username: '', status: 'unknown', tags: [] });
     setModalOpen(true);
   };
 
@@ -144,6 +176,7 @@ export default function TestMachinePage() {
       name: machine.name,
       ip_address: machine.ip_address,
       teamviewer_id: machine.teamviewer_id || '',
+      rdp_username: machine.rdp_username || '',
       status: machine.status,
       tags: [...machine.tags],
     });
@@ -162,6 +195,7 @@ export default function TestMachinePage() {
           name: formData.name.trim(),
           ip_address: formData.ip_address.trim(),
           teamviewer_id: formData.teamviewer_id?.trim() || undefined,
+          rdp_username: formData.rdp_username?.trim() || undefined,
           status: formData.status,
           tags: formData.tags || [],
         });
@@ -171,6 +205,7 @@ export default function TestMachinePage() {
           name: formData.name.trim(),
           ip_address: formData.ip_address.trim(),
           teamviewer_id: formData.teamviewer_id?.trim() || undefined,
+          rdp_username: formData.rdp_username?.trim() || undefined,
           status: formData.status,
           tags: formData.tags || [],
         });
@@ -242,20 +277,48 @@ export default function TestMachinePage() {
     // Only idle + unlocked machines are occupiable by clicking.
     if (machine.status === 'idle' && !machine.locked) {
       setOccupyTarget(machine);
-      setOccupyUnits(2);
+      setOccupyUnits(null);
       setOccupyAutoRenew(false);
     }
   };
 
+  // 公共占用逻辑："确认占用"与"远程桌面连接"共用
+  const performOccupy = async (target: TestMachine, units: number, autoRenew: boolean): Promise<TestMachine> => {
+    return occupyTestMachine(target.id, units * UNIT_MINUTES, autoRenew);
+  };
+
   const handleOccupy = async () => {
-    if (!occupyTarget) return;
+    if (!occupyTarget || occupyUnits == null) return;
     setOccupySubmitting(true);
     try {
-      await occupyTestMachine(occupyTarget.id, occupyUnits * UNIT_MINUTES, occupyAutoRenew);
+      await performOccupy(occupyTarget, occupyUnits, occupyAutoRenew);
       message.success(
         occupyAutoRenew
           ? `已占用 ${occupyUnits * UNIT_MINUTES} 分钟，自动续期已开启：页面保持打开将每 30 秒滑动续期，关闭页面后到期自动释放`
           : `已占用 ${occupyUnits * UNIT_MINUTES} 分钟，自动续期已关闭：到期后直接释放，不自动续期`
+      );
+      setOccupyTarget(null);
+      loadMachines();
+    } catch (e: any) {
+      message.error(e?.response?.data?.detail || '申请占用失败');
+    } finally {
+      setOccupySubmitting(false);
+    }
+  };
+
+  // 远程桌面连接：一键占用 + 打开本机 mstsc。主方案为下载 .rdp 文件（系统关联
+  // mstsc，双击即打开且 IP 已填入远程地址框）；同时复制 IP 到剪贴板作为兜底。
+  const handleRdpConnect = async () => {
+    if (!occupyTarget || occupyUnits == null) return;
+    setOccupySubmitting(true);
+    try {
+      await performOccupy(occupyTarget, occupyUnits, occupyAutoRenew);
+      const copied = await copyToClipboard(occupyTarget.ip_address);
+      const fileName = downloadRdpFile(occupyTarget.name, occupyTarget.ip_address, occupyTarget.rdp_username);
+      message.success(
+        copied === 'success'
+          ? `已占用 ${occupyUnits * UNIT_MINUTES} 分钟。IP 已复制到剪贴板，并已下载 ${fileName}：双击打开远程桌面（IP 已自动填入），或直接粘贴到 mstsc`
+          : `已占用 ${occupyUnits * UNIT_MINUTES} 分钟。已下载 ${fileName}：双击打开远程桌面（IP 已自动填入）；浏览器禁止自动复制，请手动复制 IP ${occupyTarget.ip_address}`
       );
       setOccupyTarget(null);
       loadMachines();
@@ -526,6 +589,12 @@ export default function TestMachinePage() {
               <span className="tm-card-value tm-mono">{machine.teamviewer_id}</span>
             </div>
           )}
+          {machine.rdp_username && (
+            <div className="tm-card-field">
+              <span className="tm-card-label">远程用户名</span>
+              <span className="tm-card-value tm-mono">{machine.rdp_username}</span>
+            </div>
+          )}
           {machine.tags.length > 0 && (
             <div className="tm-card-tags">
               {machine.tags.map((t) => (
@@ -648,6 +717,16 @@ export default function TestMachinePage() {
             />
           </div>
           <div className="tm-form-field">
+            <label>远程用户名（可选）</label>
+            <input
+              type="text"
+              placeholder="例如：administrator"
+              value={formData.rdp_username}
+              onChange={(e) => setFormData({ ...formData, rdp_username: e.target.value })}
+            />
+            <span className="tm-form-hint">远程桌面登录账号，生成 .rdp 文件时自动填入</span>
+          </div>
+          <div className="tm-form-field">
             <label>标签（可选，可输入多个）</label>
             <Select
               mode="tags"
@@ -685,11 +764,30 @@ export default function TestMachinePage() {
       <Modal
         title={`申请占用：${occupyTarget?.name || ''}`}
         open={!!occupyTarget}
-        onOk={handleOccupy}
         onCancel={() => setOccupyTarget(null)}
-        okText="确认占用"
-        cancelText="取消"
-        confirmLoading={occupySubmitting}
+        footer={[
+          <Button key="cancel" onClick={() => setOccupyTarget(null)}>
+            取消
+          </Button>,
+          <Button
+            key="rdp"
+            type="primary"
+            disabled={occupyUnits == null}
+            loading={occupySubmitting}
+            onClick={handleRdpConnect}
+          >
+            远程桌面连接
+          </Button>,
+          <Button
+            key="ok"
+            type="primary"
+            disabled={occupyUnits == null}
+            loading={occupySubmitting}
+            onClick={handleOccupy}
+          >
+            确认占用
+          </Button>,
+        ]}
         destroyOnClose
       >
         {occupyTarget && (

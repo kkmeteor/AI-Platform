@@ -142,6 +142,7 @@ def migrate_db():
                 name VARCHAR(100) NOT NULL,
                 ip_address VARCHAR(50) NOT NULL,
                 teamviewer_id VARCHAR(50),
+                rdp_username VARCHAR(100),
                 status VARCHAR(20) NOT NULL DEFAULT 'unknown',
                 tags VARCHAR(200),
                 locked BOOLEAN NOT NULL DEFAULT 0,
@@ -160,6 +161,7 @@ def migrate_db():
         test_machine_migrations = [
             ("locked", "BOOLEAN NOT NULL DEFAULT 0"),
             ("tags", "VARCHAR(200)"),
+            ("rdp_username", "VARCHAR(100)"),
             # Agent probe metadata (is-busy.py reports)
             ("hostname", "VARCHAR(100)"),
             ("last_seen_at", "TIMESTAMP"),

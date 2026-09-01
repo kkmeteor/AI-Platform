@@ -307,6 +307,44 @@ function Assert-Admin {
     }
 }
 
+function Wait-ForServiceState {
+    <#
+    Poll until the service reaches one of -TargetStates or times out. A service
+    can legitimately sit in StartPending while pythonw.exe boots, and WinSW's
+    onfailure-restart may briefly cycle it, so a single Get-Service right after
+    `start` is unreliable. Returns the last observed state.
+    #>
+    param(
+        [string]$Svc,
+        [string[]]$TargetStates = @("Running"),
+        [int]$TimeoutSec = 45,
+        [int]$PollSec = 3
+    )
+    $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    while ((Get-Date) -lt $deadline) {
+        $s = Get-ServiceState $Svc
+        if ($TargetStates -contains $s) { return $s }
+        Start-Sleep -Seconds $PollSec
+    }
+    return (Get-ServiceState $Svc)
+}
+
+function Dump-ProbeLogs {
+    # Print the tail of WinSW's wrapper/stdout/stderr logs so the reason for a
+    # service that won't reach Running shows up right in the Jenkins console.
+    $files = @(
+        (Join-Path $logsDir "$WrapperName.wrapper.log"),
+        (Join-Path $logsDir "$WrapperName.out.log"),
+        (Join-Path $logsDir "$WrapperName.err.log")
+    )
+    foreach ($f in $files) {
+        if (Test-Path $f) {
+            Write-Host "----- tail $f -----" -ForegroundColor Yellow
+            Get-Content $f -Tail 20 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ }
+        }
+    }
+}
+
 function Install-ProbeService {
     Assert-Admin
     Write-Step "Installing probe agent service '$ServiceName' into $InstallDir"
@@ -350,12 +388,13 @@ function Install-ProbeService {
     }
     Invoke-Checked -Script { & $wrapper install } -What "winsw install"
 
-    # 5. Start and confirm.
+    # 5. Start and confirm (poll for Running; StartPending is transient).
     Invoke-Checked -Script { & $wrapper start } -What "winsw start"
-    $state = Get-ServiceState $ServiceName
+    $state = Wait-ForServiceState -Svc $ServiceName -TargetStates @("Running") -TimeoutSec 45 -PollSec 3
     Write-Host "SERVICE_STATE: $state"
     if ($state -ne "Running") {
-        throw "Service '$ServiceName' did not reach Running state (state=$state); check $logsDir\$WrapperName.wrapper.log"
+        Dump-ProbeLogs
+        throw "Service '$ServiceName' did not reach Running within 45s (state=$state); see the log tails above / $logsDir\$WrapperName.wrapper.log"
     }
 
     # 6. Full-chain verification: one-shot report must be accepted by backend.
@@ -386,7 +425,12 @@ function Update-ProbeService {
 
     # WinSW re-reads its XML on (re)start; restart applies the new config/env.
     Invoke-Checked -Script { & $wrapper restart } -What "winsw restart"
-    Write-Host "SERVICE_STATE: $(Get-ServiceState $ServiceName)"
+    $state = Wait-ForServiceState -Svc $ServiceName -TargetStates @("Running") -TimeoutSec 45 -PollSec 3
+    Write-Host "SERVICE_STATE: $state"
+    if ($state -ne "Running") {
+        Dump-ProbeLogs
+        throw "Service '$ServiceName' did not reach Running after restart within 45s (state=$state); see the log tails above / $logsDir\$WrapperName.wrapper.log"
+    }
 
     Test-OnceRoundTrip -Python $py.Python -ScriptPath $agentScript `
         -Server $ServerUrl -ProbeToken $Token -Agent $AgentName

@@ -224,6 +224,7 @@ class TestMachineCreate(BaseModel):
     name: str
     ip_address: str
     teamviewer_id: Optional[str] = None
+    rdp_username: Optional[str] = None
     status: str = "unknown"
     locked: bool = False
     tags: Optional[List[str]] = None
@@ -233,6 +234,7 @@ class TestMachineUpdate(BaseModel):
     name: Optional[str] = None
     ip_address: Optional[str] = None
     teamviewer_id: Optional[str] = None
+    rdp_username: Optional[str] = None
     status: Optional[str] = None
     locked: Optional[bool] = None
     tags: Optional[List[str]] = None
@@ -243,6 +245,7 @@ class TestMachineResponse(BaseModel):
     name: str
     ip_address: str
     teamviewer_id: Optional[str] = None
+    rdp_username: Optional[str] = None
     status: str = "unknown"
     locked: bool = False
     tags: List[str] = []
