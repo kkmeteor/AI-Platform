@@ -570,3 +570,7 @@ export function getFileDownloadUrl(path: string): string {
 export function getZipDownloadUrl(path: string): string {
   return `/api/files/download-zip?path=${encodeURIComponent(path)}`;
 }
+
+export function getFilePreviewUrl(path: string): string {
+  return `/api/files/preview?path=${encodeURIComponent(path)}`;
+}

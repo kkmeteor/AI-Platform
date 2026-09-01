@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Breadcrumb, Button, Empty, message, Spin, Table, Tooltip } from 'antd';
+import { Breadcrumb, Button, Empty, message, Modal, Space, Spin, Table, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   fetchFileList,
   getFileDownloadUrl,
+  getFilePreviewUrl,
   getZipDownloadUrl,
 } from '../services/api';
 import type { FileEntry } from '../services/api';
@@ -53,6 +56,31 @@ async function downloadViaFetch(url: string, fileName: string) {
   URL.revokeObjectURL(objectUrl);
 }
 
+// ── preview helpers ──
+
+type PreviewKind = 'md' | 'text' | 'image' | 'pdf';
+
+/** Extension whitelist shared with the backend /files/preview endpoint. */
+const PREVIEW_KINDS: Record<string, PreviewKind> = {
+  md: 'md',
+  markdown: 'md',
+  txt: 'text',
+  log: 'text',
+  png: 'image',
+  jpg: 'image',
+  jpeg: 'image',
+  gif: 'image',
+  webp: 'image',
+  svg: 'image',
+  pdf: 'pdf',
+};
+
+function previewKindOf(name: string): PreviewKind | null {
+  const dot = name.lastIndexOf('.');
+  if (dot < 0) return null;
+  return PREVIEW_KINDS[name.slice(dot + 1).toLowerCase()] ?? null;
+}
+
 // ── page ──
 
 export default function FileManagerPage() {
@@ -60,6 +88,13 @@ export default function FileManagerPage() {
   const [items, setItems] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{
+    entry: FileEntry;
+    kind: PreviewKind;
+    content?: string;
+    blobUrl?: string;
+  } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const load = useCallback(async (targetPath: string) => {
     setLoading(true);
@@ -118,6 +153,45 @@ export default function FileManagerPage() {
     }
   };
 
+  const handlePreview = async (entry: FileEntry) => {
+    const kind = previewKindOf(entry.name);
+    if (!kind) return;
+    const target = path ? `${path}/${entry.name}` : entry.name;
+    setPreviewLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(getFilePreviewUrl(target), {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        let detail = `预览失败 (${res.status})`;
+        try {
+          const body = await res.json();
+          if (body?.detail) detail = body.detail;
+        } catch {
+          // keep the generic message when the body is not JSON
+        }
+        throw new Error(detail);
+      }
+      const blob = await res.blob();
+      if (kind === 'md' || kind === 'text') {
+        setPreview({ entry, kind, content: await blob.text() });
+      } else {
+        // images / PDFs are shown from an object URL; revoked on modal close
+        setPreview({ entry, kind, blobUrl: URL.createObjectURL(blob) });
+      }
+    } catch (err: any) {
+      message.error(err?.message || `预览 ${entry.name} 失败`);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const closePreview = () => {
+    if (preview?.blobUrl) URL.revokeObjectURL(preview.blobUrl);
+    setPreview(null);
+  };
+
   const columns: ColumnsType<FileEntry> = [
     {
       title: '名称',
@@ -150,7 +224,7 @@ export default function FileManagerPage() {
     {
       title: '操作',
       key: 'actions',
-      width: 200,
+      width: 260,
       render: (_, record) =>
         record.is_dir ? (
           <Button
@@ -161,14 +235,21 @@ export default function FileManagerPage() {
             下载 zip
           </Button>
         ) : (
-          <Button
-            size="small"
-            type="primary"
-            loading={downloading === record.name}
-            onClick={() => handleDownload(record)}
-          >
-            下载
-          </Button>
+          <Space size={4}>
+            {previewKindOf(record.name) && (
+              <Button size="small" onClick={() => handlePreview(record)}>
+                预览
+              </Button>
+            )}
+            <Button
+              size="small"
+              type="primary"
+              loading={downloading === record.name}
+              onClick={() => handleDownload(record)}
+            >
+              下载
+            </Button>
+          </Space>
         ),
     },
   ];
@@ -214,6 +295,34 @@ export default function FileManagerPage() {
           />
         )}
       </Spin>
+
+      <Modal
+        open={preview !== null}
+        title={preview?.entry.name}
+        onCancel={closePreview}
+        footer={null}
+        width="100vw"
+        style={{ top: 0, paddingBottom: 0, maxWidth: '100vw' }}
+        rootClassName="fm-preview-modal"
+      >
+        {previewLoading ? (
+          <div className="fm-preview-loading">
+            <Spin />
+          </div>
+        ) : preview?.kind === 'md' ? (
+          <div className="fm-preview-md">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{preview.content ?? ''}</ReactMarkdown>
+          </div>
+        ) : preview?.kind === 'text' ? (
+          <pre className="fm-preview-text">{preview.content}</pre>
+        ) : preview?.kind === 'image' ? (
+          <div className="fm-preview-image">
+            <img src={preview.blobUrl} alt={preview.entry.name} />
+          </div>
+        ) : preview?.kind === 'pdf' ? (
+          <iframe className="fm-preview-pdf" src={preview.blobUrl} title={preview.entry.name} />
+        ) : null}
+      </Modal>
     </div>
   );
 }
