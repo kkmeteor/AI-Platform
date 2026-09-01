@@ -40,7 +40,9 @@ Questions to answer:
 
 <!-- Standard error response format -->
 
-(To be filled by the team)
+- Errors are returned as `HTTPException(detail=<中文 message>)`; the frontend shows `detail` via antd message.
+- **401 is reserved for JWT/session expiry only.** The frontend axios interceptor treats any 401 as a logged-out session (clears token, redirects to login). Business-level credential failures (e.g. SMB share login) must return **403** or the user gets logged out of the whole site.
+- See [SMB Access](./smb-access.md) for the full error matrix of the file manager module.
 
 ---
 
