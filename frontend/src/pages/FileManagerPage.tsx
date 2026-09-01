@@ -301,8 +301,8 @@ export default function FileManagerPage() {
         title={preview?.entry.name}
         onCancel={closePreview}
         footer={null}
-        width="100vw"
-        style={{ top: 0, paddingBottom: 0, maxWidth: '100vw' }}
+        width="90vw"
+        style={{ top: '5vh', maxWidth: '90vw' }}
         rootClassName="fm-preview-modal"
       >
         {previewLoading ? (
