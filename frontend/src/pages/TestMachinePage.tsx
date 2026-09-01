@@ -70,7 +70,9 @@ function sanitizeFileName(name: string): string {
  * 生成并下载 .rdp 远程桌面配置文件。
  * Windows 系统默认将 .rdp 关联到 mstsc（远程桌面连接），双击文件即打开且
  * "计算机"地址框自动填入目标 IP；内容为纯 ASCII，UTF-8 无 BOM 与 ANSI 等价。
- * 传入 rdp_username 时额外写入 username 行，mstsc 自动填入远程用户名。
+ * 传入 rdp_username 时额外写入 username 行，mstsc 自动填入远程用户名；
+ * prompt for credentials 强制连接时弹出凭据窗口（预填 username），
+ * 避免 mstsc 沿用系统凭据管理器中保存的旧账号。
  * 返回实际下载的文件名（供提示文案使用）。
  */
 function downloadRdpFile(machineName: string, ipAddress: string, username?: string | null): string {
@@ -79,6 +81,7 @@ function downloadRdpFile(machineName: string, ipAddress: string, username?: stri
   if (username && username.trim()) {
     lines.push(`username:s:${username.trim()}`);
   }
+  lines.push('prompt for credentials:i:1');
   const blob = new Blob([lines.join('\n') + '\n'], { type: 'application/rdp' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
