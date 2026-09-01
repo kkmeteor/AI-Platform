@@ -540,3 +540,33 @@ export async function fetchTestMachineLogs(params: { machine_id?: number; page?:
   const res = await api.get<TestMachineLogListResponse>('/test-machines/logs', { params });
   return res.data;
 }
+
+// ── File Manager (LAN SMB share) ──
+
+export interface FileEntry {
+  name: string;
+  is_dir: boolean;
+  size: number | null;
+  modified_at: string | null;
+}
+
+export interface FileListResponse {
+  path: string;
+  parent: string | null;
+  items: FileEntry[];
+}
+
+export async function fetchFileList(path: string = ''): Promise<FileListResponse> {
+  const res = await api.get<FileListResponse>('/files/list', { params: { path } });
+  return res.data;
+}
+
+// Downloads go through a plain browser link (not axios) so large files are not
+// subject to the axios 30s timeout.
+export function getFileDownloadUrl(path: string): string {
+  return `/api/files/download?path=${encodeURIComponent(path)}`;
+}
+
+export function getZipDownloadUrl(path: string): string {
+  return `/api/files/download-zip?path=${encodeURIComponent(path)}`;
+}
