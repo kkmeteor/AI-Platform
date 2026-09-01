@@ -56,8 +56,17 @@ param(
     # WinSW always looks for the XML config with the same base name next to it.
     [string]$WrapperName = "agent-probe",
 
-    # URL to download WinSW (x64) from when the wrapper is not yet present.
-    [string]$WinswUrl = "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe",
+    # WinSW wrapper source: http(s) URL (GitHub release) or UNC path on the
+    # internal LAN share (preferred: much faster, no external dependency).
+    [string]$WinswUrl = "\\10.10.11.31\SoftwareDev\tengfei\Jenkins\WinSW-x64.exe",
+
+    # Optional domain credentials for the LAN share, used when the account
+    # running this script has no access to it. Password falls back to
+    # $env:SHARE_PASSWORD (injected by Jenkins Credentials Binding); never
+    # hardcode secrets in this file.
+    [string]$ShareUser = "",
+    [string]$SharePassword = "",
+    
 
     # DEPRECATED: kept only so existing `-NssmUrl` pipeline calls still bind.
     # Ignored now that the service is managed by WinSW.
@@ -195,20 +204,57 @@ function Ensure-PyWin32 {
 function Resolve-Winsw {
     <#
     Ensure the WinSW wrapper binary is present at <InstallDir>\<WrapperName>.exe
-    and return its full path. Reuse an existing copy; otherwise download x64
-    from -WinswUrl. The XML side-car (same base name) is always regenerated.
+    and return its full path. Reuse an existing copy; otherwise fetch x64
+    from -WinswUrl. -WinswUrl may be an http(s) URL (Invoke-WebRequest) or a
+    UNC path on the LAN share (Copy-Item; preferred because it avoids the
+    slow GitHub download). The XML side-car (same base name) is always
+    regenerated.
     #>
     $exe = Join-Path $InstallDir "$WrapperName.exe"
     if (-not (Test-Path $exe)) {
         if (-not $WinswUrl) {
             throw "WinSW not found at $exe and no -WinswUrl supplied. Place WinSW-x64.exe as $exe or pass -WinswUrl."
         }
-        Write-Step "Downloading WinSW from $WinswUrl"
+        Write-Step "Fetching WinSW from $WinswUrl"
         try {
-            Invoke-WebRequest -Uri $WinswUrl -OutFile $exe -UseBasicParsing
+            if ($WinswUrl.StartsWith('\\')) {
+                if ($ShareUser) {
+                    # UNC path with explicit domain credentials: mount the
+                    # share as a temp drive (SecureString, password never
+                    # lands on the command line), copy, then drop the mapping.
+                    if (-not $SharePassword) { $SharePassword = $env:SHARE_PASSWORD }
+                    if (-not $SharePassword) {
+                        throw "ShareUser '$ShareUser' provided but no password; pass -SharePassword or set SHARE_PASSWORD."
+                    }
+                    $shareRoot = ($WinswUrl -split '\\')[0..3] -join '\'
+                    $rel = $WinswUrl.Substring($shareRoot.Length).TrimStart('\')
+                    $secure = ConvertTo-SecureString $SharePassword -AsPlainText -Force
+                    $cred = New-Object System.Management.Automation.PSCredential($ShareUser, $secure)
+                    $drive = "Share$PID"
+                    # Explicit -ErrorAction Stop: a bad credential is a
+                    # non-terminating error and must not leave the function
+                    # "succeeding" with a file that was never copied.
+                    New-PSDrive -Name $drive -PSProvider FileSystem -Root $shareRoot -Credential $cred -ErrorAction Stop | Out-Null
+                    try {
+                        Copy-Item "$drive`:\$rel" $exe -Force -ErrorAction Stop
+                    }
+                    finally {
+                        Remove-PSDrive $drive -Force -ErrorAction SilentlyContinue
+                    }
+                }
+                else {
+                    # UNC path with the current process credentials (the
+                    # Jenkins agent runs as a domain account that usually
+                    # already has read access to the share).
+                    Copy-Item -Path $WinswUrl -Destination $exe -Force
+                }
+            }
+            else {
+                Invoke-WebRequest -Uri $WinswUrl -OutFile $exe -UseBasicParsing
+            }
         }
         catch {
-            throw "Failed to download WinSW from $WinswUrl : $($_.Exception.Message)"
+            throw "Failed to fetch WinSW from $WinswUrl : $($_.Exception.Message)"
         }
     }
     Write-Step "Using WinSW: $exe"
