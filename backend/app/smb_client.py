@@ -273,7 +273,7 @@ def _read_chunks(handle: Open) -> Iterator[bytes]:
 def list_dir(user: User, rel_path: str) -> tuple[str, Optional[str], list[SmbEntry]]:
     """List a directory; returns (path, parent, entries) sorted dirs-first."""
     rel_path = _validate_rel_path(rel_path)
-    _abs_path, combined = _absolute_path(rel_path)
+    _abs_path, _combined = _absolute_path(rel_path)
     with _smb_tree(user) as tree:
         try:
             items = _list_entries(tree, _abs_path)
@@ -285,7 +285,10 @@ def list_dir(user: User, rel_path: str) -> tuple[str, Optional[str], list[SmbEnt
     parent = None
     if rel_path:
         parent = "/".join(rel_path.split("/")[:-1]) or None
-    return combined, parent, items
+    # Return the normalized rel path (not the root-joined absolute one): the
+    # API-facing path must stay relative to the configured root so the client
+    # can round-trip it back as a query parameter without duplicating root.
+    return rel_path, parent, items
 
 
 @contextmanager

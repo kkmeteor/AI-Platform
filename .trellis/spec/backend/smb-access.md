@@ -33,6 +33,7 @@ Config keys (`config.json` -> `config.smb`): `host`, `share`, `root`, `domain` (
 ## 3. Contracts
 
 - Paths are **relative to the share root** (not UNC). `root` config scopes all access.
+- **Path semantics are uniformly "relative to root"**: the `path` query parameter AND the `path`/`parent` fields returned by `GET /files/list` are both relative to `config.smb.root` (empty string = root). Never return a root-joined path from the API — the client round-trips it back as a query parameter, and joining root twice 404s (e.g. `tengfei/tengfei/...`).
 - Path validation rejects `..`, leading `/`, `:`, NUL; `GET /files/list` returns `400` for traversal attempts.
 - Credentials come from the logged-in user's cached base64 password (`users.password`), authenticated via NTLM (`DOMAIN\username`).
 - Error responses: FastAPI `HTTPException(detail=<Chinese message>)`; frontend shows `detail` via antd message.
