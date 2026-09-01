@@ -13,6 +13,7 @@ import {
 import type { TestMachine, TestMachineCreate, TestMachineLog } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { copyToClipboard } from '../utils/clipboard';
+import CollapsibleGroup from '../components/CollapsibleGroup';
 import './TestMachinePage.css';
 
 const STATUS_OPTIONS = [
@@ -21,6 +22,9 @@ const STATUS_OPTIONS = [
   { value: 'unknown', label: '未知', color: '#a8a29e' },
   { value: 'offline', label: '离线', color: '#78716c' },
 ] as const;
+
+// 分组固定顺序：优先组按此顺序排列，其余 tag 按字典序排在后面
+const PRIORITY_TAGS = ['真机', 'Flight', 'FlightX', 'NOVA', 'SPECTCT', '6x0'];
 
 const UNIT_MINUTES = 15;
 const MAX_UNITS = 8;
@@ -548,11 +552,16 @@ export default function TestMachinePage() {
 
   // Group machines by tag for grouped display. A machine with multiple tags
   // appears in every group it belongs to; machines without tags go to a
-  // dedicated "untagged" section.
-  const allTags = useMemo(
-    () => [...new Set(machines.flatMap((m) => m.tags))].sort((a, b) => a.localeCompare(b, 'zh')),
-    [machines]
-  );
+  // dedicated "untagged" section. Priority tags keep a fixed order, other
+  // tags sort alphabetically after them.
+  const allTags = useMemo(() => {
+    const present = new Set(machines.flatMap((m) => m.tags));
+    const priority = PRIORITY_TAGS.filter((t) => present.has(t));
+    const others = [...present]
+      .filter((t) => !PRIORITY_TAGS.includes(t))
+      .sort((a, b) => a.localeCompare(b, 'zh'));
+    return [...priority, ...others];
+  }, [machines]);
   const tagGroups = useMemo(
     () => allTags.map((tag) => ({ tag, machines: machines.filter((m) => m.tags.includes(tag)) })),
     [allTags, machines]
@@ -615,16 +624,6 @@ export default function TestMachinePage() {
     );
   };
 
-  const renderGroup = (title: string, groupMachines: TestMachine[]) => (
-    <section className="tm-group">
-      <div className="tm-group-header">
-        <h2 className="tm-group-title">{title}</h2>
-        <span className="tm-group-count">{groupMachines.length} 台</span>
-      </div>
-      <div className="tm-grid">{groupMachines.map(renderCard)}</div>
-    </section>
-  );
-
   return (
     <div className="tm-page">
       <div className="tm-header">
@@ -677,8 +676,29 @@ export default function TestMachinePage() {
         </div>
       ) : (
         <div className="tm-groups">
-          {tagGroups.map((g) => renderGroup(`#${g.tag}`, g.machines))}
-          {untagged.length > 0 && renderGroup('未分组', untagged)}
+          {tagGroups.map((g) => (
+            <CollapsibleGroup
+              key={g.tag}
+              title={`#${g.tag}`}
+              count={g.machines.length}
+              countSuffix="台"
+              storageKey={`tm-group-collapsed-${g.tag}`}
+              defaultCollapsed
+            >
+              <div className="tm-grid">{g.machines.map(renderCard)}</div>
+            </CollapsibleGroup>
+          ))}
+          {untagged.length > 0 && (
+            <CollapsibleGroup
+              title="未分组"
+              count={untagged.length}
+              countSuffix="台"
+              storageKey="tm-group-collapsed-__untagged__"
+              defaultCollapsed
+            >
+              <div className="tm-grid">{untagged.map(renderCard)}</div>
+            </CollapsibleGroup>
+          )}
         </div>
       )}
 

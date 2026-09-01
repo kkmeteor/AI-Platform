@@ -99,33 +99,11 @@
   gap: 16px;
 }
 
-/* Tag groups */
+/* Group container: spacing between collapsible groups (header styles live in CollapsibleGroup.css) */
 .tm-groups {
   display: flex;
   flex-direction: column;
   gap: 28px;
-}
-
-.tm-group-header {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding-left: 10px;
-  border-left: 3px solid var(--accent);
-}
-
-.tm-group-title {
-  font-size: 15px;
-  font-weight: 650;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
-  margin: 0;
-}
-
-.tm-group-count {
-  font-size: 12px;
-  color: var(--text-tertiary);
 }
 
 /* Tag chips on cards */
