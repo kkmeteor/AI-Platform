@@ -316,6 +316,31 @@ def iter_file_chunks(user: User, rel_path: str) -> Iterator[bytes]:
         yield from _read_chunks(handle)
 
 
+def read_file_bytes(user: User, rel_path: str, max_bytes: int) -> bytes:
+    """Read a file fully but bounded; raises 413 when it exceeds max_bytes.
+
+    Used by the preview API so oversized files are rejected as soon as the
+    limit is crossed instead of being buffered into memory.
+    """
+    rel_path = _validate_rel_path(rel_path)
+    abs_path, _combined = _absolute_path(rel_path)
+    with _smb_tree(user) as tree:
+        try:
+            with _open_handle(tree, abs_path) as handle:
+                chunks: list[bytes] = []
+                total = 0
+                for chunk in _read_chunks(handle):
+                    total += len(chunk)
+                    if total > max_bytes:
+                        raise SmbError(413, "文件过大，请下载查看")
+                    chunks.append(chunk)
+                return b"".join(chunks)
+        except SmbError:
+            raise
+        except Exception as exc:  # noqa: BLE001
+            raise _classify_error(exc, "open file") from exc
+
+
 def _zip_add(tree, abs_path: str, rel_dir: str, arc_root: str, zf: zipfile.ZipFile) -> None:
     """Depth-first copy of a directory subtree into the zip archive."""
     for entry in _list_entries(tree, abs_path):

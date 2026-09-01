@@ -12,15 +12,46 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from starlette.background import BackgroundTask
 
 from app.auth import get_current_user
 from app.models import User
-from app.smb_client import SmbError, iter_file_chunks, list_dir, open_file, zip_directory
+from app.smb_client import SmbError, iter_file_chunks, list_dir, open_file, read_file_bytes, zip_directory
 
 router = APIRouter(prefix="/files", tags=["files"])
 logger = logging.getLogger(__name__)
+
+# extension -> (kind, media type); only these kinds can be previewed inline
+_PREVIEW_KINDS: dict[str, tuple[str, str]] = {
+    ".md": ("text", "text/markdown"),
+    ".markdown": ("text", "text/markdown"),
+    ".txt": ("text", "text/plain"),
+    ".log": ("text", "text/plain"),
+    ".png": ("image", "image/png"),
+    ".jpg": ("image", "image/jpeg"),
+    ".jpeg": ("image", "image/jpeg"),
+    ".gif": ("image", "image/gif"),
+    ".webp": ("image", "image/webp"),
+    ".svg": ("image", "image/svg+xml"),
+    ".pdf": ("pdf", "application/pdf"),
+}
+
+_PREVIEW_LIMITS: dict[str, int] = {
+    "text": 2 * 1024 * 1024,
+    "image": 10 * 1024 * 1024,
+    "pdf": 50 * 1024 * 1024,
+}
+
+
+def _decode_text(raw: bytes) -> str:
+    """Decode as UTF-8 first (handles BOM), falling back to GBK for legacy files."""
+    for encoding in ("utf-8-sig", "gbk"):
+        try:
+            return raw.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8", errors="replace")
 
 
 def _raise_smb(e: SmbError) -> None:
@@ -93,3 +124,28 @@ def file_download_zip(
         headers=headers,
         background=BackgroundTask(Path(tmp_path).unlink, missing_ok=True),
     )
+
+
+@router.get("/preview")
+def file_preview(
+    path: str = Query(..., description="要预览的文件的相对路径"),
+    current_user: User = Depends(get_current_user),
+):
+    """Serve a file for in-browser preview (text / image / PDF only).
+
+    Text files are decoded (UTF-8 first, GBK fallback); images and PDFs are
+    streamed as-is. Oversized files are rejected with 413 by the SMB layer.
+    """
+    if not path:
+        raise HTTPException(status_code=400, detail="缺少文件路径")
+    kind = _PREVIEW_KINDS.get(Path(path).suffix.lower())
+    if kind is None:
+        raise HTTPException(status_code=415, detail="该文件类型不支持在线预览，请下载查看")
+    kind_name, media_type = kind
+    try:
+        raw = read_file_bytes(current_user, path, _PREVIEW_LIMITS[kind_name])
+    except SmbError as e:
+        _raise_smb(e)
+    if kind_name == "text":
+        return Response(content=_decode_text(raw), media_type=f"{media_type}; charset=utf-8")
+    return Response(content=raw, media_type=media_type)
