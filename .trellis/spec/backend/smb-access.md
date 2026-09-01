@@ -17,6 +17,7 @@ Backend API (all require `Depends(get_current_user)`, JWT bearer):
 GET /api/files/list?path=<rel>          -> 200 {path, parent, items: [{name, is_dir, size, modified_at}]}
 GET /api/files/download?path=<rel>      -> 200 streaming attachment (filename* UTF-8)
 GET /api/files/download-zip?path=<rel>  -> 200 zip (empty path = share root; arc root = dir name / "share")
+GET /api/files/preview?path=<rel>       -> 200 inline text/image/pdf (whitelist, size-bounded)
 ```
 
 SMB layer (`smb_client.py`):
@@ -25,6 +26,7 @@ SMB layer (`smb_client.py`):
 list_dir(path) -> list[dict]                      # name / is_dir / size / modified_at(UTC iso)
 open_file(path) -> (Open handle, size)
 iter_file_chunks(handle, size) -> Iterator[bytes] # read(offset, length), EOF via STATUS_END_OF_FILE
+read_file_bytes(path, max_bytes) -> bytes         # raises 413 once the limit is crossed
 zip_directory(path, out_fd)                       # single connection, DFS zipfile stream
 ```
 
@@ -37,6 +39,7 @@ Config keys (`config.json` -> `config.smb`): `host`, `share`, `root`, `domain` (
 - Path validation rejects `..`, leading `/`, `:`, NUL; `GET /files/list` returns `400` for traversal attempts.
 - Credentials come from the logged-in user's cached base64 password (`users.password`), authenticated via NTLM (`DOMAIN\username`).
 - Error responses: FastAPI `HTTPException(detail=<Chinese message>)`; frontend shows `detail` via antd message.
+- **Preview whitelist** (`/files/preview`): text `.md/.markdown/.txt/.log` (2 MB, UTF-8 then GBK fallback), image `.png/.jpg/.jpeg/.gif/.webp/.svg` (10 MB), pdf `.pdf` (50 MB). Non-whitelisted extensions return `415` BEFORE opening any SMB handle; oversized files raise `413` mid-read so memory stays bounded. The frontend button visibility uses the same extension whitelist (`previewKindOf` in `FileManagerPage.tsx`) — keep both lists in sync.
 
 ## 4. Validation & Error Matrix
 
@@ -49,6 +52,8 @@ Config keys (`config.json` -> `config.smb`): `host`, `share`, `root`, `domain` (
 | Path not found | 404 | 路径不存在 |
 | Path traversal | 400 | 非法的路径 |
 | Bad network name / other | 502 | 共享目录暂时不可用… |
+| Preview: unsupported extension | 415 | 该文件类型不支持在线预览，请下载查看 |
+| Preview: file exceeds limit | 413 | 文件过大，请下载查看 |
 
 **CRITICAL**: SMB credential failures must be `403`, never `401`. The frontend axios interceptor treats ANY 401 as session expiry → clears token → redirects to login. A business-level 401 (share credentials bad) would log the user out of the whole site.
 
