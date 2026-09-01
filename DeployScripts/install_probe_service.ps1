@@ -66,11 +66,6 @@ param(
     # hardcode secrets in this file.
     [string]$ShareUser = "",
     [string]$SharePassword = "",
-    
-
-    # DEPRECATED: kept only so existing `-NssmUrl` pipeline calls still bind.
-    # Ignored now that the service is managed by WinSW.
-    [string]$NssmUrl = "",
 
     # Optional override for the agent source script (default: repo DebugTools/is-busy.py).
     [string]$SourceScript = ""
