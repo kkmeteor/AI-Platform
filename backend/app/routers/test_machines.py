@@ -180,9 +180,9 @@ def update_test_machine(
     machine_id: int,
     payload: TestMachineUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin", "editor")),
 ):
-    """Update a test machine. Admin only.
+    """Update a test machine. Admin and editor.
 
     Setting status="busy" + locked=True marks the machine as admin-locked
     (busy and not occupiable); status="idle" + locked=False unlocks it.
@@ -410,27 +410,28 @@ def release_test_machine(
 ):
     """Release a machine occupation.
 
-    The occupier may release their own occupation; admins may force-release
-    any occupation.
+    The occupier may release their own occupation; admins and editors may
+    force-release any occupation.
     """
     machine = db.query(TestMachine).filter(TestMachine.id == machine_id).first()
     if not machine:
         raise HTTPException(status_code=404, detail="Test machine not found")
 
     occ = occupation_cache.release(
-        machine.id, user_id=None if current_user.role == "admin" else current_user.id
+        machine.id,
+        user_id=None if current_user.role in ("admin", "editor") else current_user.id,
     )
     if occ is None:
         raise HTTPException(status_code=409, detail="没有可释放的占用（或您不是占用者）")
 
-    forced = current_user.role == "admin" and occ.user_id != current_user.id
+    forced = current_user.role in ("admin", "editor") and occ.user_id != current_user.id
     machine.status = "idle"
     _add_log(
         db,
         machine,
         current_user,
         "release",
-        f"释放占用（占用者 {occ.username}）" + ("，管理员强制释放" if forced else ""),
+        f"释放占用（占用者 {occ.username}）" + ("，强制释放" if forced else ""),
     )
     db.commit()
     db.refresh(machine)
@@ -465,9 +466,9 @@ def list_test_machine_logs(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("admin")),
+    current_user: User = Depends(require_role("admin", "editor")),
 ):
-    """List test machine occupation logs (admin only)."""
+    """List test machine occupation logs (admin and editor)."""
     query = db.query(TestMachineLog)
     if machine_id is not None:
         query = query.filter(TestMachineLog.machine_id == machine_id)

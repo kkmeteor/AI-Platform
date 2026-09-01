@@ -95,7 +95,7 @@ function downloadRdpFile(machineName: string, ipAddress: string, username?: stri
 }
 
 export default function TestMachinePage() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, canEdit, user } = useAuth();
   const [machines, setMachines] = useState<TestMachine[]>([]);
   const [loading, setLoading] = useState(true);
   const [tick, setTick] = useState(0);
@@ -432,7 +432,7 @@ export default function TestMachinePage() {
   const renderCardFooter = (machine: TestMachine) => {
     const isMine = machine.occupier_user_id === user?.id;
 
-    if (isAdmin) {
+    if (canEdit) {
       return (
         <div className="tm-card-footer">
           <div className="tm-card-status-select">
@@ -490,19 +490,21 @@ export default function TestMachinePage() {
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             </button>
-            <button
-              className="tm-card-action-btn delete"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete(machine);
-              }}
-              title="删除"
-            >
+            {isAdmin && (
+              <button
+                className="tm-card-action-btn delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(machine);
+                }}
+                title="删除"
+              >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
               </svg>
-            </button>
+              </button>
+            )}
           </div>
         </div>
       );
@@ -631,7 +633,7 @@ export default function TestMachinePage() {
           <p className="tm-subtitle">查看测试机状态，空闲机器可点击申请占用（15 分钟为单位，可选自动续期，到期自动释放）</p>
         </div>
         <div className="tm-header-actions">
-          {isAdmin && (
+          {canEdit && (
             <button className="tm-log-btn" onClick={() => openLogs(null)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="8" y1="6" x2="21" y2="6" />
