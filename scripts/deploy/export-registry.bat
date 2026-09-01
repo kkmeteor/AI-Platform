@@ -39,7 +39,7 @@ cd /d "%~dp0"
 
 REM Build backend image (always rebuild to include latest code)
 echo [INFO] Building backend image...
-docker build -t dcloud-market-backend:latest ./backend
+docker build -t dcloud-market-backend:latest ../backend
 if errorlevel 1 (
     echo [ERROR] Backend image build failed!
     pause
@@ -48,7 +48,7 @@ if errorlevel 1 (
 
 REM Build frontend image (always rebuild to include latest code)
 echo [INFO] Building frontend image...
-docker build -t dcloud-market-frontend:latest ./frontend
+docker build -t dcloud-market-frontend:latest ../frontend
 if errorlevel 1 (
     echo [ERROR] Frontend image build failed!
     pause
@@ -128,7 +128,7 @@ copy /y "%~dp0deploy-registry.bat" "%DEPLOY_DIR%\deploy.bat" >nul
 
 REM Copy config directory (config.json for runtime override)
 mkdir "%DEPLOY_DIR%\config"
-copy /y "%~dp0config\config.json" "%DEPLOY_DIR%\config\config.json" >nul
+copy /y "%~dp0..\..\config\config.json" "%DEPLOY_DIR%\config\config.json" >nul
 
 REM Generate stop.bat for target machine
 echo @echo off> "%DEPLOY_DIR%\stop.bat"

@@ -29,7 +29,7 @@ REM Switch to project root directory
 cd /d "%~dp0"
 
 echo [1/2] Building backend image (dcloud-market-backend)...
-docker build -t dcloud-market-backend:latest ./backend
+docker build -t dcloud-market-backend:latest ../backend
 if errorlevel 1 (
     echo [ERROR] Backend image build failed!
     pause
@@ -39,7 +39,7 @@ echo [OK] Backend image built successfully.
 echo.
 
 echo [2/2] Building frontend image (dcloud-market-frontend)...
-docker build -t dcloud-market-frontend:latest ./frontend
+docker build -t dcloud-market-frontend:latest ../frontend
 if errorlevel 1 (
     echo [ERROR] Frontend image build failed!
     pause
@@ -55,6 +55,6 @@ echo.
 echo Image list:
 docker images dcloud-market-*
 echo.
-echo Next step: Run deploy.bat to start services.
+echo Next step: Run start-docker.bat to start services.
 echo.
 pause

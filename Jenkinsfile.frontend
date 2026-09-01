@@ -78,8 +78,8 @@ pipeline {
                 checkout scm
                 echo "Deploying frontend to test environment on master..."
                 bat '''
-                    docker-compose -f docker-compose.registry.yml pull frontend
-                    docker-compose -f docker-compose.registry.yml up -d --remove-orphans frontend
+                    docker-compose -f scripts/deploy/docker-compose.registry.yml pull frontend
+                    docker-compose -f scripts/deploy/docker-compose.registry.yml up -d --remove-orphans frontend
                 '''
                 echo "Frontend deployment completed."
             }

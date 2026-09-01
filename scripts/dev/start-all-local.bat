@@ -10,10 +10,10 @@ echo ========================================
 echo.
 
 echo [1/2] Starting Backend (FastAPI)...
-start "Backend - FastAPI" cmd /k "%ROOT%_run_backend.bat"
+start "Backend - FastAPI" cmd /k "%ROOT%run-backend.bat"
 
 echo [2/2] Starting Frontend (Vite)...
-start "Frontend - React" cmd /k "%ROOT%_run_frontend.bat"
+start "Frontend - React" cmd /k "%ROOT%run-frontend.bat"
 
 echo.
 echo ========================================

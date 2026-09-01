@@ -30,7 +30,7 @@ echo [INFO] Checking images...
 docker image inspect dcloud-market-backend:latest >nul 2>&1
 if errorlevel 1 (
     echo [INFO] Backend image not found, building...
-    docker build -t dcloud-market-backend:latest ./backend
+    docker build -t dcloud-market-backend:latest ../backend
     if errorlevel 1 (
         echo [ERROR] Backend image build failed!
         pause
@@ -41,7 +41,7 @@ if errorlevel 1 (
 docker image inspect dcloud-market-frontend:latest >nul 2>&1
 if errorlevel 1 (
     echo [INFO] Frontend image not found, building...
-    docker build -t dcloud-market-frontend:latest ./frontend
+    docker build -t dcloud-market-frontend:latest ../frontend
     if errorlevel 1 (
         echo [ERROR] Frontend image build failed!
         pause
@@ -52,8 +52,8 @@ if errorlevel 1 (
 echo [OK] Image check passed.
 echo.
 
-REM Create export directory
-set EXPORT_DIR=%~dp0dcloud-market-deploy
+REM Create export directory (kept at project root, see .gitignore)
+set EXPORT_DIR=%~dp0..\..\dcloud-market-deploy
 if exist "%EXPORT_DIR%" (
     echo [INFO] Cleaning old export directory...
     rmdir /s /q "%EXPORT_DIR%"

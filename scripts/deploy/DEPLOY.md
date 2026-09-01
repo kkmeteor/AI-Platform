@@ -32,14 +32,27 @@ dcloud-market/
 │   ├── nginx.conf          ← Nginx 反向代理配置
 │   ├── .dockerignore
 │   └── ...（前端源码）
-├── docker-compose.yml      ← 开发环境编排配置
-├── docker-compose.prod.yml ← 测试机编排配置（离线部署用）
-├── build.bat               ← 一键打包脚本（构建镜像）
-├── export.bat              ← 镜像导出脚本（生成离线部署包）
-├── deploy.bat              ← 开发机一键部署脚本
-├── deploy-prod.bat         ← 测试机部署脚本（加载镜像+启动）
-├── stop.bat                ← 停止服务脚本
-└── DEPLOY.md               ← 本文件
+├── config/
+│   └── config.json         ← 运行时配置（不入库）
+├── scripts/
+│   ├── dev/                ← 本地开发脚本
+│   │   ├── start-all-local.bat  ← 一键启动前后端开发服务器
+│   │   ├── run-backend.bat      ← 启动后端（uvicorn）
+│   │   └── run-frontend.bat     ← 启动前端（Vite）
+│   └── deploy/             ← Docker 构建/部署/导出脚本
+│       ├── build.bat           ← 一键打包脚本（构建镜像）
+│       ├── start-docker.bat    ← 开发机一键部署（构建+启动）
+│       ├── stop-docker.bat     ← 停止服务脚本
+│       ├── export.bat          ← 镜像导出脚本（生成离线部署包）
+│       ├── export-registry.bat ← 构建并推送镜像到内网 Registry
+│       ├── deploy-prod.bat     ← 测试机部署脚本（加载镜像+启动）
+│       ├── deploy-registry.bat ← 目标机部署脚本（从 Registry 拉取）
+│       ├── docker-compose.yml        ← 开发环境编排配置
+│       ├── docker-compose.prod.yml   ← 测试机编排配置（离线部署用）
+│       ├── docker-compose.registry.yml ← Registry 部署编排
+│       └── DEPLOY.md            ← 本文件
+├── Jenkinsfile               ← CI 流水线（构建、推送、部署）
+└── DeployScripts/            ← 探针服务安装脚本
 ```
 
 ---
@@ -77,7 +90,7 @@ netstat -ano | findstr :8000
 
 ### 步骤 4：一键打包（构建镜像）
 
-在项目根目录 `dcloud-market/` 下，双击运行：
+在项目 `scripts/deploy/` 目录下，双击运行：
 
 ```
 build.bat
@@ -104,12 +117,13 @@ docker images dcloud-market-*
 双击运行：
 
 ```
-deploy.bat
+start-docker.bat
 ```
 
 或手动执行：
 
 ```bash
+cd scripts/deploy
 docker-compose up -d --build
 ```
 
@@ -143,9 +157,9 @@ docker-compose ps
 开发机                              测试机
 ──────                              ──────
 1. 修改代码
-2. 本地验证（start_all.bat）
-3. 运行 build.bat    ──构建镜像
-4. 运行 export.bat   ──导出镜像包
+2. 本地验证（scripts/dev/start-all-local.bat）
+3. 运行 scripts/deploy/build.bat  ──构建镜像
+4. 运行 scripts/deploy/export.bat ──导出镜像包
 5. 复制 dcloud-market-deploy/  ──→
                                     6. 运行 deploy.bat ──自动部署
                                     7. 访问验证
@@ -157,21 +171,21 @@ docker-compose ps
 
 修改代码后，先在本地验证功能正常：
 ```
-start_all.bat        ← 启动后端 + 前端开发服务器
+scripts/dev/start-all-local.bat  ← 启动后端 + 前端开发服务器
 ```
 
 **② 构建 Docker 镜像**
 
 确认无误后，构建最新镜像：
 ```
-build.bat            ← 构建 backend + frontend 两个镜像
+scripts/deploy/build.bat        ← 构建 backend + frontend 两个镜像
 ```
 
 **③ 导出离线部署包**
 
 将镜像导出为 tar 文件，并打包所有部署配置：
 ```
-export.bat           ← 生成 dcloud-market-deploy/ 文件夹
+scripts/deploy/export.bat       ← 生成 dcloud-market-deploy/ 文件夹（项目根目录）
 ```
 
 **④ 复制到测试机**
@@ -203,7 +217,7 @@ deploy.bat           ← 自动停止旧容器、加载新镜像、启动服务
 
 ### 步骤 1：在开发机上导出镜像
 
-在开发机项目根目录下，双击运行：
+在开发机项目 `scripts/deploy/` 目录下，双击运行：
 
 ```
 export.bat
@@ -379,7 +393,7 @@ xcopy C:\Data D:\Backup\dcloud-data /E /I /Y
 
 ### Q3：端口 9090 被占用
 
-修改 `docker-compose.yml` 中 frontend 的端口映射，例如改为 9100：
+修改 `scripts/deploy/docker-compose.yml` 中 frontend 的端口映射，例如改为 9100：
 
 ```yaml
 ports:

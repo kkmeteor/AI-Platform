@@ -134,10 +134,18 @@ Agent Control 区：
 │   ├── RAG/                       # 知识库架构设计文档
 │   └── FlowChart/                 # 架构流程图
 │
-├── docker-compose.yml             # 容器编排
-├── _run_backend.bat               # 本地启动后端
-├── _run_frontend.bat              # 本地启动前端
-└── _start_all_local.bat           # 一键启动（前后端）
+├── scripts/
+│   ├── dev/                       # 本地开发脚本
+│   │   ├── start-all-local.bat    # 一键启动（前后端）
+│   │   ├── run-backend.bat        # 本地启动后端
+│   │   └── run-frontend.bat       # 本地启动前端
+│   └── deploy/                    # Docker 构建/部署/导出脚本与编排
+│       ├── build.bat              # 构建镜像
+│       ├── start-docker.bat       # 一键部署（构建+启动）
+│       ├── export.bat             # 导出离线部署包
+│       ├── export-registry.bat    # 推送镜像到内网 Registry
+│       └── docker-compose*.yml    # 容器编排
+└── Jenkinsfile                    # CI 流水线
 ```
 
 ---

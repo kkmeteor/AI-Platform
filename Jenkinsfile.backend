@@ -77,8 +77,8 @@ pipeline {
                 checkout scm
                 echo "Deploying backend to test environment on master..."
                 bat '''
-                    docker-compose -f docker-compose.registry.yml pull backend
-                    docker-compose -f docker-compose.registry.yml up -d --remove-orphans backend
+                    docker-compose -f scripts/deploy/docker-compose.registry.yml pull backend
+                    docker-compose -f scripts/deploy/docker-compose.registry.yml up -d --remove-orphans backend
                 '''
                 echo "Backend deployment completed."
             }

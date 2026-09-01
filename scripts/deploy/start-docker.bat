@@ -21,7 +21,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Switch to project root directory
+REM Switch to script directory (docker-compose.yml is located here)
 cd /d "%~dp0"
 
 REM Initialize data directory (create and migrate data on first deployment)
@@ -52,20 +52,20 @@ if exist "C:\Data\config\config.json\" (
 )
 if not exist "C:\Data\config\config.json" (
     echo [INFO] Initializing config.json file...
-    if exist "config\config.json" (
-        copy /y "config\config.json" "C:\Data\config\config.json" >nul
+    if exist "%~dp0..\..\config\config.json" (
+        copy /y "%~dp0..\..\config\config.json" "C:\Data\config\config.json" >nul
     ) else (
         type nul > "C:\Data\config\config.json"
     )
 )
 echo [OK] Config directory ready.
 REM On first deployment, copy existing upload files from backend to C:\Data\uploads
-if exist "backend\uploads" (
-    dir /b "backend\uploads\*.zip" >nul 2>&1
+if exist "%~dp0..\..\backend\uploads" (
+    dir /b "%~dp0..\..\backend\uploads\*.zip" >nul 2>&1
     if not errorlevel 1 (
         if not exist "C:\Data\uploads\*.zip" (
             echo [INFO] First deployment, copying existing upload files to C:\Data\uploads ...
-            xcopy /y /q "backend\uploads\*.zip" "C:\Data\uploads\" >nul
+            xcopy /y /q "%~dp0..\..\backend\uploads\*.zip" "C:\Data\uploads\" >nul
         )
     )
 )
