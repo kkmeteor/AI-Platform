@@ -98,6 +98,14 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_hours: int = _json_defaults.get("jwtExpireHours", 8)
 
+    # ── SMB file share (web file manager) ──
+    # LAN share browsed by the File Manager page. Each user's own AD credentials
+    # (cached base64 password) are used to connect; smb_domain falls back to ldap_domain.
+    smb_host: str = _json_defaults.get("smb", {}).get("host", "")
+    smb_share: str = _json_defaults.get("smb", {}).get("share", "")
+    smb_root: str = _json_defaults.get("smb", {}).get("root", "")
+    smb_domain: str = _json_defaults.get("smb", {}).get("domain", "")
+
     # ── Test machine probe (agent idle-status reporting) ──
     # Shared static token that agent services send in the X-Probe-Token header.
     # Keep it out of git (config.json is gitignored; set via PROBE_TOKEN env).
