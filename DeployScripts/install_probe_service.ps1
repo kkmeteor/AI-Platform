@@ -535,7 +535,16 @@ function Test-OnceRoundTrip {
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $SourceScript) {
-    $SourceScript = Join-Path (Join-Path $scriptDir "..") "DebugTools\is-busy.py"
+    # Portable layout: is-busy.py copied next to this script (the "copy the
+    # whole DeployScripts folder" scenario). Fall back to the repo layout
+    # (sibling DebugTools dir) for the Jenkins pipeline.
+    $portable = Join-Path $scriptDir "is-busy.py"
+    if (Test-Path $portable) {
+        $SourceScript = $portable
+    }
+    else {
+        $SourceScript = Join-Path (Join-Path $scriptDir "..") "DebugTools\is-busy.py"
+    }
 }
 if (-not (Test-Path $SourceScript)) {
     throw "Agent source script not found: $SourceScript"
