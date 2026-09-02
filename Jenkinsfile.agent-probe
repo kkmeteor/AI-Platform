@@ -50,8 +50,7 @@ pipeline {
         )
         choice(
             name: 'USE_SHARE_CRED',
-            choices: ['true', 'false'],
-            defaultValue: 'true',
+            choices: ['true', 'false'], // default = first choice ('true')
             description: 'Fetch WinSW via Jenkins credentials (id: share-cred, type: Username with password) when the agent account has no LAN share access'
         )
     }
