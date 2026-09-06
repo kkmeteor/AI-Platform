@@ -9,11 +9,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.auth import authenticate_ldap, create_access_token, get_current_user, record_login_log
+from app.config import get_settings
 from app.database import get_db
 from app.models import User
 from app.schemas import LoginRequest, LoginResponse, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+settings = get_settings()
 
 
 def _get_client_ip(request: Request) -> str:
@@ -48,10 +51,21 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
     else:
         # Cache miss or password mismatch: fall back to guest / LDAP authentication
         if username == "guest" and req.password == "guest":
-            success, message, user_info = True, "Guest login", {"display_name": "Guest"}
+            success, message, user_info = True, "Guest login", {"display_name": "Guest", "role": "viewer"}
         else:
             # Authenticate against LDAP
             success, message, user_info = authenticate_ldap(username, req.password)
+
+            # Local fallback: when LDAP is unavailable (not configured / unreachable)
+            # or the account is not in AD, allow the configured local admin account.
+            if not success and (
+                username == settings.local_admin_username
+                and req.password == settings.local_admin_password
+            ):
+                success, message, user_info = True, "Local admin login", {
+                    "display_name": settings.local_admin_username,
+                    "role": "admin",
+                }
 
         if not success:
             record_login_log(db, user.id if user else None, username, ip_address, False, message)
@@ -82,7 +96,7 @@ def login(req: LoginRequest, request: Request, db: Session = Depends(get_db)):
             password=base64.b64encode(req.password.encode("utf-8")).decode("utf-8"),
             display_name=user_info.get("display_name") if user_info else username,
             email=user_info.get("email") if user_info else None,
-            role="viewer",
+            role=user_info.get("role", "viewer") if user_info else "viewer",
             is_active=True,
         )
         db.add(user)

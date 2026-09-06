@@ -93,6 +93,13 @@ class Settings(BaseSettings):
     ldap_base_dn: str = _json_defaults.get("ldap", {}).get("baseDn", "")
     ldap_user_prefix: str = _json_defaults.get("ldap", {}).get("userPrefix", "")
 
+    # ── Local fallback login (when LDAP is unavailable) ──
+    # A built-in admin account that always works as a backup login,
+    # e.g. for local development without AD access.
+    # Override via config.json ("localAdmin") or LOCAL_ADMIN_USERNAME / LOCAL_ADMIN_PASSWORD env vars.
+    local_admin_username: str = _json_defaults.get("localAdmin", {}).get("username", "admin")
+    local_admin_password: str = _json_defaults.get("localAdmin", {}).get("password", "admin123")
+
     # ── JWT ──
     jwt_secret_key: str = _json_defaults.get("jwtSecretKey", "change-me-in-production")
     jwt_algorithm: str = "HS256"
