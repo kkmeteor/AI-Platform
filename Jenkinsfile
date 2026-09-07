@@ -1,6 +1,16 @@
 // ============================================
 // DCloud Market - Unified Jenkins Pipeline
 // Parallel Build & Deploy (Windows)
+//
+// Frontend & backend live in the same git repo,
+// so the code is checked out only once per phase:
+//   Phase 1 (tengfei-test): checkout once, then
+//     build & push backend/frontend in parallel
+//   Phase 2 (master):       checkout once, then
+//     deploy both containers in parallel
+// Nested stages without their own agent run in
+// the workspace of the enclosing agented stage,
+// so both parallel branches see the checkout.
 // ============================================
 
 pipeline {
@@ -25,60 +35,139 @@ pipeline {
     }
 
     stages {
-        stage('Build & Deploy') {
-            parallel {
-                // ------------------------------------------
-                // Backend: Python FastAPI
-                // ------------------------------------------
-                stage('Backend') {
-                    agent none
-                    environment {
-                        REGISTRY = '10.10.11.194:1000'
-                        IMAGE_NAME = 'dcloud-market-backend'
-                        FULL_IMAGE = "${env.REGISTRY}/${env.IMAGE_NAME}"
-                        BUILD_CONTEXT = '.\\backend'
+        // ==========================================
+        // Phase 1: checkout once, build & push images
+        // ==========================================
+        stage('Build & Push') {
+            when {
+                beforeAgent true
+                expression { params.RUN_MODE != 'deploy-only' }
+            }
+            agent { label "tengfei-test" }
+            stages {
+                stage('Checkout') {
+                    steps {
+                        checkout scm
                     }
-                    stages {
-                        stage('Backend - Checkout') {
-                            when { expression { params.RUN_MODE != 'deploy-only' } }
-                            agent { label "tengfei-test" }
-                            steps {
-                                checkout scm
+                }
+                stage('Build Images') {
+                    parallel {
+                        // ------------------------------------------
+                        // Backend: Python FastAPI
+                        // ------------------------------------------
+                        stage('Backend') {
+                            environment {
+                                REGISTRY = '10.10.11.194:1000'
+                                IMAGE_NAME = 'dcloud-market-backend'
+                                FULL_IMAGE = "${env.REGISTRY}/${env.IMAGE_NAME}"
+                                BUILD_CONTEXT = '.\\backend'
                             }
-                        }
-                        stage('Backend - Build') {
-                            when { expression { params.RUN_MODE != 'deploy-only' } }
-                            agent { label "tengfei-test" }
-                            steps {
-                                script {
-                                    def tag = params.TAG?.trim() ? params.TAG : "${env.BUILD_NUMBER}"
-                                    env.IMAGE_WITH_TAG = "${env.FULL_IMAGE}:${tag}"
-                                    def tags = "-t ${env.IMAGE_WITH_TAG}"
-                                    if (params.PUSH_LATEST) {
-                                        tags += " -t ${env.FULL_IMAGE}:latest"
+                            stages {
+                                stage('Backend - Build') {
+                                    steps {
+                                        script {
+                                            def tag = params.TAG?.trim() ? params.TAG : "${env.BUILD_NUMBER}"
+                                            env.IMAGE_WITH_TAG = "${env.FULL_IMAGE}:${tag}"
+                                            def tags = "-t ${env.IMAGE_WITH_TAG}"
+                                            if (params.PUSH_LATEST) {
+                                                tags += " -t ${env.FULL_IMAGE}:latest"
+                                            }
+                                            echo "Building: ${env.IMAGE_WITH_TAG}"
+                                            bat "docker build ${tags} -f ${env.BUILD_CONTEXT}\\Dockerfile ${env.BUILD_CONTEXT}"
+                                        }
                                     }
-                                    echo "Building: ${env.IMAGE_WITH_TAG}"
-                                    bat "docker build ${tags} -f ${env.BUILD_CONTEXT}\\Dockerfile ${env.BUILD_CONTEXT}"
+                                }
+                                stage('Backend - Push') {
+                                    steps {
+                                        bat 'docker push %IMAGE_WITH_TAG%'
+                                        script {
+                                            if (params.PUSH_LATEST) {
+                                                bat 'docker push %FULL_IMAGE%:latest'
+                                            }
+                                        }
+                                    }
+                                }
+                                stage('Backend - Cleanup') {
+                                    steps {
+                                        bat '''
+                                            docker rmi %IMAGE_WITH_TAG% 2>nul || echo cleanup skipped
+                                            docker rmi %FULL_IMAGE%:latest 2>nul || echo cleanup skipped
+                                        '''
+                                    }
                                 }
                             }
                         }
-                        stage('Backend - Push') {
-                            when { expression { params.RUN_MODE != 'deploy-only' } }
-                            agent { label "tengfei-test" }
-                            steps {
-                                bat 'docker push %IMAGE_WITH_TAG%'
-                                script {
-                                    if (params.PUSH_LATEST) {
-                                        bat 'docker push %FULL_IMAGE%:latest'
+
+                        // ------------------------------------------
+                        // Frontend: React + Vite + Nginx
+                        // ------------------------------------------
+                        stage('Frontend') {
+                            environment {
+                                REGISTRY = '10.10.11.194:1000'
+                                IMAGE_NAME = 'dcloud-market-frontend'
+                                FULL_IMAGE = "${env.REGISTRY}/${env.IMAGE_NAME}"
+                                BUILD_CONTEXT = '.\\frontend'
+                            }
+                            stages {
+                                stage('Frontend - Build') {
+                                    steps {
+                                        script {
+                                            def tag = params.TAG?.trim() ? params.TAG : "${env.BUILD_NUMBER}"
+                                            env.IMAGE_WITH_TAG = "${env.FULL_IMAGE}:${tag}"
+                                            def tags = "-t ${env.IMAGE_WITH_TAG}"
+                                            if (params.PUSH_LATEST) {
+                                                tags += " -t ${env.FULL_IMAGE}:latest"
+                                            }
+                                            echo "Building: ${env.IMAGE_WITH_TAG}"
+                                            bat "docker build ${tags} -f ${env.BUILD_CONTEXT}\\Dockerfile ${env.BUILD_CONTEXT}"
+                                        }
+                                    }
+                                }
+                                stage('Frontend - Push') {
+                                    steps {
+                                        bat 'docker push %IMAGE_WITH_TAG%'
+                                        script {
+                                            if (params.PUSH_LATEST) {
+                                                bat 'docker push %FULL_IMAGE%:latest'
+                                            }
+                                        }
+                                    }
+                                }
+                                stage('Frontend - Cleanup') {
+                                    steps {
+                                        bat '''
+                                            docker rmi %IMAGE_WITH_TAG% 2>nul || echo cleanup skipped
+                                            docker rmi %FULL_IMAGE%:latest 2>nul || echo cleanup skipped
+                                        '''
                                     }
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // Phase 2: checkout once on deploy host,
+        // then deploy both containers in parallel
+        // ==========================================
+        stage('Deploy') {
+            when {
+                beforeAgent true
+                expression { params.RUN_MODE != 'build-push' }
+            }
+            agent { label "master" }
+            stages {
+                stage('Checkout') {
+                    steps {
+                        checkout scm
+                    }
+                }
+                stage('Deploy Services') {
+                    parallel {
                         stage('Backend - Deploy') {
-                            when { expression { params.RUN_MODE != 'build-push' } }
-                            agent { label "master" }
                             steps {
-                                checkout scm
                                 bat '''
                                     if not exist "C:/Data/config" mkdir "C:/Data/config"
                                     copy /Y "config/config.json" "C:/Data/config/config.json"
@@ -89,71 +178,8 @@ pipeline {
                                 '''
                             }
                         }
-                        stage('Backend - Cleanup') {
-                            when { expression { params.RUN_MODE != 'deploy-only' } }
-                            agent { label "tengfei-test" }
-                            steps {
-                                bat '''
-                                    docker rmi %IMAGE_WITH_TAG% 2>nul || echo cleanup skipped
-                                    docker rmi %FULL_IMAGE%:latest 2>nul || echo cleanup skipped
-                                '''
-                            }
-                        }
-                    }
-                }
-
-                // ------------------------------------------
-                // Frontend: React + Vite + Nginx
-                // ------------------------------------------
-                stage('Frontend') {
-                    agent none
-                    environment {
-                        REGISTRY = '10.10.11.194:1000'
-                        IMAGE_NAME = 'dcloud-market-frontend'
-                        FULL_IMAGE = "${env.REGISTRY}/${env.IMAGE_NAME}"
-                        BUILD_CONTEXT = '.\\frontend'
-                    }
-                    stages {
-                        stage('Frontend - Checkout') {
-                            when { expression { params.RUN_MODE != 'deploy-only' } }
-                            agent { label "tengfei-test" }
-                            steps {
-                                checkout scm
-                            }
-                        }
-                        stage('Frontend - Build') {
-                            when { expression { params.RUN_MODE != 'deploy-only' } }
-                            agent { label "tengfei-test" }
-                            steps {
-                                script {
-                                    def tag = params.TAG?.trim() ? params.TAG : "${env.BUILD_NUMBER}"
-                                    env.IMAGE_WITH_TAG = "${env.FULL_IMAGE}:${tag}"
-                                    def tags = "-t ${env.IMAGE_WITH_TAG}"
-                                    if (params.PUSH_LATEST) {
-                                        tags += " -t ${env.FULL_IMAGE}:latest"
-                                    }
-                                    echo "Building: ${env.IMAGE_WITH_TAG}"
-                                    bat "docker build ${tags} -f ${env.BUILD_CONTEXT}\\Dockerfile ${env.BUILD_CONTEXT}"
-                                }
-                            }
-                        }
-                        stage('Frontend - Push') {
-                            when { expression { params.RUN_MODE != 'deploy-only' } }
-                            agent { label "tengfei-test" }
-                            steps {
-                                bat 'docker push %IMAGE_WITH_TAG%'
-                                script {
-                                    if (params.PUSH_LATEST) {
-                                        bat 'docker push %FULL_IMAGE%:latest'
-                                    }
-                                }
-                            }
-                        }
                         stage('Frontend - Deploy') {
-                            when { expression { params.RUN_MODE != 'build-push' } }
-                            agent { label "master" }
                             steps {
-                                checkout scm
                                 bat '''
                                     if not exist "C:/Data/config" mkdir "C:/Data/config"
                                     copy /Y "config/config.json" "C:/Data/config/config.json"
@@ -161,16 +187,6 @@ pipeline {
                                     docker rm -f dcloud-market-frontend 2>nul || echo no existing container
                                     docker-compose -p dcloud-market -f scripts/deploy/docker-compose.registry.yml pull frontend
                                     docker-compose -p dcloud-market -f scripts/deploy/docker-compose.registry.yml up -d --no-deps --remove-orphans frontend
-                                '''
-                            }
-                        }
-                        stage('Frontend - Cleanup') {
-                            when { expression { params.RUN_MODE != 'deploy-only' } }
-                            agent { label "tengfei-test" }
-                            steps {
-                                bat '''
-                                    docker rmi %IMAGE_WITH_TAG% 2>nul || echo cleanup skipped
-                                    docker rmi %FULL_IMAGE%:latest 2>nul || echo cleanup skipped
                                 '''
                             }
                         }
