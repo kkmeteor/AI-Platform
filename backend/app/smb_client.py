@@ -7,6 +7,10 @@ current user's cached AD credentials — the base64 password stored in
 (directory listing, streaming file reads, zip packaging) consumed by
 ``routers/files.py``.
 
+The ``guest`` account (created by the guest/guest login shortcut) has no real
+AD password, so it browses through the dedicated read-only account configured
+in ``smb.guestUser`` / ``smb.guestPassword``.
+
 Every request opens a fresh connection: LAN auth overhead is small
 (~100-300ms) and it avoids serving stale sessions after a password change.
 No credentials are ever logged.
@@ -46,6 +50,11 @@ logger = logging.getLogger(__name__)
 CHUNK_SIZE = 1024 * 1024
 CONNECT_TIMEOUT_SECONDS = 30
 
+# Special web account created by the guest/guest login shortcut (routers/auth.py).
+# It has no real AD password and browses the share via the dedicated read-only
+# account from settings instead (see _smb_credentials).
+GUEST_LOGIN_NAME = "guest"
+
 
 class SmbError(Exception):
     """SMB operation failure carrying an HTTP status code and user-facing message."""
@@ -80,6 +89,27 @@ def _user_smb_password(user: User) -> str:
     except (ValueError, UnicodeDecodeError):
         logger.error("user %s has an invalid cached password entry", user.username)
         raise SmbError(403, "共享目录凭据已损坏，请退出后重新登录")
+
+
+def _smb_credentials(user: User, domain: str) -> tuple[str, str]:
+    """Resolve the (username, password) pair for a web user's SMB session.
+
+    Regular users authenticate with their own cached AD password so the share
+    ACL decides what each person can see. The guest account cannot do that and
+    reuses the dedicated read-only account from settings instead.
+    """
+    if user.username == GUEST_LOGIN_NAME:
+        guest_user = get_settings().smb_guest_user.strip()
+        if not guest_user:
+            raise SmbError(503, "访客共享访问未配置（smb.guestUser / smb.guestPassword）")
+        # An explicit DOMAIN\user form in the config wins over the default domain
+        username = guest_user if "\\" in guest_user else (f"{domain}\\{guest_user}" if domain else guest_user)
+        return username, get_settings().smb_guest_password
+
+    # NTLM carries the domain inside the username (DOMAIN\user); pass it
+    # separately from the website login name.
+    username = f"{domain}\\{user.username}" if domain else user.username
+    return username, _user_smb_password(user)
 
 
 def _smb_config() -> tuple[str, str, str, str]:
@@ -165,10 +195,8 @@ def _smb_tree(user: User):
     Yields the connected TreeConnect; always tears the connection down.
     """
     host, share, _root, domain = _smb_config()
-    # NTLM carries the domain inside the username (DOMAIN\user); pass it
-    # separately from the website login name.
-    username = f"{domain}\\{user.username}" if domain else user.username
-    password = _user_smb_password(user)
+    is_guest = user.username == GUEST_LOGIN_NAME
+    username, password = _smb_credentials(user, domain)
 
     connection = Connection(uuid.uuid4(), host, port=445)
     try:
@@ -184,7 +212,12 @@ def _smb_tree(user: User):
     except SmbError:
         raise
     except Exception as exc:  # noqa: BLE001 - classified by _classify_error
-        raise _classify_error(exc, "connect") from exc
+        error = _classify_error(exc, "connect")
+        # Re-login cannot fix share-credential problems for a guest; point at
+        # the configured guest account instead.
+        if is_guest and error.status_code == 403:
+            raise SmbError(403, "访客共享账号无效或权限不足，请联系管理员") from exc
+        raise error from exc
     finally:
         try:
             connection.disconnect()

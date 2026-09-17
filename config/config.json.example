@@ -25,6 +25,8 @@
     "host": "10.10.11.31",
     "share": "SoftwareDev",
     "root": "tengfei",
-    "domain": ""
+    "domain": "",
+    "guestUser": "readonly-share-account",
+    "guestPassword": "readonly-share-account-password"
   }
 }

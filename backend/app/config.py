@@ -101,10 +101,14 @@ class Settings(BaseSettings):
     # ── SMB file share (web file manager) ──
     # LAN share browsed by the File Manager page. Each user's own AD credentials
     # (cached base64 password) are used to connect; smb_domain falls back to ldap_domain.
+    # The guest account has no real AD password: it browses through the dedicated
+    # read-only account below (env: SMB_GUEST_USER / SMB_GUEST_PASSWORD).
     smb_host: str = _json_defaults.get("smb", {}).get("host", "")
     smb_share: str = _json_defaults.get("smb", {}).get("share", "")
     smb_root: str = _json_defaults.get("smb", {}).get("root", "")
     smb_domain: str = _json_defaults.get("smb", {}).get("domain", "")
+    smb_guest_user: str = _json_defaults.get("smb", {}).get("guestUser", "")
+    smb_guest_password: str = _json_defaults.get("smb", {}).get("guestPassword", "")
 
     # ── Test machine probe (agent idle-status reporting) ──
     # Shared static token that agent services send in the X-Probe-Token header.
