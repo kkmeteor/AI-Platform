@@ -120,38 +120,98 @@ function ConvertTo-XmlText {
                    -replace '"', '&quot;' -replace "'", '&apos;')
 }
 
+function Test-PythonRunnable {
+    <#
+    Confirm a resolved interpreter path actually executes (guards against a
+    dangling path or a non-functional stub), not merely that it exists on disk.
+    #>
+    param([string]$Exe)
+    $prevEAP = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $Exe -c "import sys" 2>$null | Out-Null
+        $rc = $LASTEXITCODE
+    }
+    catch {
+        return $false
+    }
+    finally {
+        $ErrorActionPreference = $prevEAP
+    }
+    return ($rc -eq 0)
+}
+
 function Resolve-Python {
     <#
-    Locate python.exe and pythonw.exe. When -PythonPath is empty, try
-    `py -3` first (Windows launcher), then `python` on PATH.
+    Locate python.exe and pythonw.exe. When -PythonPath is empty, try the
+    Windows launcher `py -3` first (py lives in C:\Windows, so it is resolvable
+    even under the service account); only if that yields nothing usable do we
+    fall back to `python` on PATH.
+
+    Each external probe is wrapped in its OWN try/catch: `& <command>` for a
+    command the current account cannot resolve (e.g. `python` missing from the
+    Jenkins service account's PATH) throws a *terminating*
+    CommandNotFoundException that $ErrorActionPreference='Continue' and a bare
+    try/finally (no catch) do NOT suppress. Without the per-probe catch, an
+    unavailable `python` aborts the whole search before the good `py` result is
+    ever used -- which is why a manual `py -3` works but the pipeline died.
     #>
     $candidates = @()
     if ($PythonPath) {
         $candidates += $PythonPath
     }
     else {
-        # Probe py/python without letting native stderr (e.g. "No installed
-        # Python found!") become a terminating error under ErrorActionPreference
-        # 'Stop', which would skip the fallback to `python` on PATH.
-        $prevEAP = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        try {
-            $pyLauncher = (& py -3 -c "import sys; print(sys.executable)" 2>$null | Select-Object -First 1)
-            if ($pyLauncher -and (Test-Path $pyLauncher)) {
-                $candidates += $pyLauncher
+        # Run `<cmd> <preArgs> -c "import sys; print(sys.executable)"` and
+        # return the printed interpreter path, or $null. The command name and
+        # args are assembled into a single array and handed to the native
+        # command directly (an array arg expands element-wise into argv), which
+        # avoids the array-splat-plus-trailing-literal parsing pitfall. The
+        # whole call sits in its own try/catch so a command the account cannot
+        # resolve (terminating CommandNotFoundException) just yields $null.
+        $probe = {
+            param([string]$cmd, [string[]]$preArgs)
+            $prevEAP = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                $argList = @($preArgs) + @('-c', 'import sys; print(sys.executable)')
+                # Collect the native command's full output BEFORE taking the
+                # first line: piping straight into `Select-Object -First 1`
+                # closes the pipeline early, kills the native command before it
+                # exits and leaves $LASTEXITCODE at -1 -- which would make a
+                # perfectly good `py -3` look like a failure.
+                $raw = & $cmd $argList 2>$null
+                $rc = $LASTEXITCODE
+                $out = $raw | Select-Object -First 1
             }
-            $pyOnPath = (& python -c "import sys; print(sys.executable)" 2>$null | Select-Object -First 1)
-            if ($pyOnPath -and (Test-Path $pyOnPath)) {
+            catch {
+                $out = $null; $rc = 1
+            }
+            finally {
+                $ErrorActionPreference = $prevEAP
+            }
+            if ($rc -ne 0 -or -not $out) { return $null }
+            $exe = "$out".Trim()
+            if (-not (Test-Path $exe)) { return $null }
+            return $exe
+        }
+
+        # 1. Windows launcher (py -3), which the service account can resolve.
+        $pyLauncher = & $probe 'py' @('-3')
+        if ($pyLauncher) {
+            $candidates += $pyLauncher
+        }
+        else {
+            # 2. Only reach for `python` on PATH if `py` gave us nothing.
+            $pyOnPath = & $probe 'python' @()
+            if ($pyOnPath) {
                 $candidates += $pyOnPath
             }
-        }
-        finally {
-            $ErrorActionPreference = $prevEAP
         }
     }
 
     foreach ($candidate in $candidates) {
-        if (Test-Path $candidate) {
+        if ((Test-Path $candidate) -and (Test-PythonRunnable $candidate)) {
+            Write-Step "Resolved python: $candidate"
             return [pscustomobject]@{
                 Python    = $candidate
                 PythonW   = Join-Path (Split-Path $candidate) "pythonw.exe"
@@ -159,7 +219,7 @@ function Resolve-Python {
             }
         }
     }
-    throw "Could not locate python.exe. Pass -PythonPath or install Python 3."
+    throw "Could not locate a runnable python.exe. Pass -PythonPath with a machine-wide install the service account can run, or install Python 3 for all users."
 }
 
 function Select-Interpreter {
