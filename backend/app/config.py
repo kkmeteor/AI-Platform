@@ -121,6 +121,15 @@ class Settings(BaseSettings):
     # Auto-register a machine on its first probe report when it is not yet in the DB.
     probe_auto_register: bool = _json_defaults.get("probeAutoRegister", True)
 
+    # ── Logging ──
+    # Comma-separated URL path prefixes whose successful (<400) access-log
+    # lines are silenced, keeping noisy heartbeat traffic out of Docker logs
+    # (agents report to /api/test-machines/probe every few seconds).
+    # Empty string disables filtering. Env: ACCESS_LOG_EXCLUDE_PATHS.
+    access_log_exclude_paths: str = _json_defaults.get(
+        "accessLogExcludePaths", "/api/test-machines/probe"
+    )
+
     model_config = {"extra": "ignore"}
 
 
