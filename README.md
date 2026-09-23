@@ -48,8 +48,7 @@ SkillMarket/
 ├── scripts/
 │   ├── dev/          # 本地开发脚本（启动前后端开发服务器）
 │   └── deploy/       # Docker 构建/部署/导出脚本与编排文件
-├── Jenkinsfile       # CI 流水线（构建、推送、部署）
-└── DeployScripts/    # 探针服务安装脚本
+└── Jenkinsfile       # CI 流水线（构建、推送、部署）
 ```
 
 ---

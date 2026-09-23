@@ -21,6 +21,7 @@
   "probeToken": "change-me-to-a-shared-probe-token",
   "probeOfflineAfterSeconds": 90,
   "probeAutoRegister": true,
+  "accessLogExcludePaths": "/api/test-machines/probe",
   "smb": {
     "host": "10.10.11.31",
     "share": "SoftwareDev",
