@@ -51,8 +51,7 @@ dcloud-market/
 │       ├── docker-compose.prod.yml   ← 测试机编排配置（离线部署用）
 │       ├── docker-compose.registry.yml ← Registry 部署编排
 │       └── DEPLOY.md            ← 本文件
-├── Jenkinsfile               ← CI 流水线（构建、推送、部署）
-└── DeployScripts/            ← 探针服务安装脚本
+└── Jenkinsfile               ← CI 流水线（构建、推送、部署）
 ```
 
 ---

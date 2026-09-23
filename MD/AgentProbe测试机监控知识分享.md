@@ -27,7 +27,7 @@
 └───────────────────────────────────┬───────────────────────────────────────────┘
                                     ▼
 ┌────────────────────────────── ① 探针 Agent（每台测试机） ──────────────────────┐
-│  is-busy.py 以 Windows 服务方式常驻（NSSM）                                     │
+│  is-busy.py 以 Windows 服务方式常驻（WinSW）                                     │
 │  · 开机自启 · 崩溃自动拉起 · 日志自动轮转                                       │
 │  · 每 10s 本地采样：键盘鼠标空闲时间 + RDP 会话状态 → 判定 busy / idle            │
 │  · 启动即上报 / 状态变化立即上报 / 无变化每 30s 心跳                              │
@@ -81,7 +81,7 @@ python is-busy.py --status      # 本地打印判定结果（排障用）
 
 ### 3.2 服务化：像 Windows 系统服务一样常驻
 
-用 NSSM（Non-Sucking Service Manager）把探针包装成 Windows 服务：
+用 WinSW 把探针包装成 Windows 服务（早期用 NSSM，因其在非交互会话下安装不稳定已切换）：
 
 - **开机自启**：机器重启后探针自动恢复上报
 - **崩溃自愈**：进程异常退出后 5 秒自动拉起
@@ -112,7 +112,7 @@ locked（管理员锁定）      >  occupied（被占用）      >  busy（物�
 
 ### 3.5 Jenkins 批量下发：一条流水线管所有机器
 
-新增 `Jenkinsfile.agent-probe` 流水线，解决"几十台机器一台台装"的问题：
+新增 `Jenkinsfile.agent-probe` 流水线（2026-09 已随 `DeployScripts/` 迁入内网脚本仓库 `sinounion_scripts/agent-probe-deploy/`），解决"几十台机器一台台装"的问题：
 
 | 参数 | 说明 |
 |------|------|
@@ -120,7 +120,7 @@ locked（管理员锁定）      >  occupied（被占用）      >  busy（物�
 | `ACTION` | install / update / uninstall / status / restart |
 | `SERVER_URL` | 后端地址（默认 10.10.11.194:8000） |
 | `IDLE_THRESHOLD_SEC` / `INTERVAL_SEC` | 空闲阈值 / 心跳间隔 |
-| `PYTHON_PATH` / `NSSM_URL` | agent 环境差异的兜底项（自动探测优先） |
+| `PYTHON_PATH` | python 环境差异的兜底项（留空自动探测） |
 
 - **并行下发**：对列表内每台机器开一个并行分支，互不影响，某台失败不拖累其他机器
 - **每台机器独立回执**：控制台逐台打印 `RESULT=PASS/FAIL`，一眼定位问题机器
@@ -134,7 +134,7 @@ locked（管理员锁定）      >  occupied（被占用）      >  busy（物�
 |------|------|------|
 | 状态采集方式 | 探针主动上报（Push） | 机器数增长平台无压力；自动注册零配置；天然支持"离线"检测 |
 | 鉴权方式 | 共享静态 token（内网） | 阶段一够用、部署简单；预留升级路径（每机独立 key / mTLS） |
-| 服务化工具 | NSSM | 脚本化、自动重启、开机自启、日志轮转，全生命周期可控 |
+| 服务化工具 | WinSW（早期 NSSM） | 脚本化、自动重启、开机自启、日志轮转，全生命周期可控 |
 | 依赖控制 | HTTP 仅标准库 | 探针只依赖 pywin32，任何机器都能快速部署 |
 | 端口 | 复用后端 8000 | 不新开端口，不增加防火墙/nginx 配置面 |
 | 数据兼容 | 只加列不删改 | SQLite 幂等迁移，旧数据全保留，回滚零损失 |
@@ -163,4 +163,4 @@ locked（管理员锁定）      >  occupied（被占用）      >  busy（物�
 
 ---
 
-*相关代码：`DebugTools/is-busy.py`（探针）、`DeployScripts/install_probe_service.ps1`（服务化）、`Jenkinsfile.agent-probe`（批量下发）、后端 `POST /api/test-machines/probe`（接收端）*
+*相关代码：探针与下发脚本已迁至内网脚本仓库 `SinoUnion/sinounion_scripts` 的 `agent-probe-deploy/`（`is-busy.py` 探针、`install_probe_service.ps1` 服务化、`Jenkinsfile.agent-probe` 批量下发）；后端接收端在本仓库 `POST /api/test-machines/probe`*
