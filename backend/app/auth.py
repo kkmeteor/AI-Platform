@@ -2,10 +2,11 @@
 Authentication module: JWT utilities, LDAP authentication, and FastAPI dependencies.
 """
 
+import hmac
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from ldap3 import Server, Connection, ALL, SUBTREE, SIMPLE
@@ -131,6 +132,23 @@ def get_current_user(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is disabled")
 
     return user
+
+
+def require_probe_token(x_token: str = Header(default="", alias="X-Probe-Token")) -> bool:
+    """Validate the shared agent probe token (X-Probe-Token header).
+
+    Independent of the user JWT flow: agent services (is-busy.py probes,
+    automated test reporters) run headless and cannot hold a user session.
+    A missing configured token means the endpoint is intentionally disabled.
+    """
+    if not settings.probe_token:
+        raise HTTPException(
+            status_code=503,
+            detail="Probe endpoint not configured (probe_token is empty)",
+        )
+    if not x_token or not hmac.compare_digest(x_token, settings.probe_token):
+        raise HTTPException(status_code=401, detail="Invalid probe token")
+    return True
 
 
 def require_role(*roles: str):

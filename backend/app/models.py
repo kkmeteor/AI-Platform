@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, Float, TIMESTAMP, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, Float, TIMESTAMP, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -123,3 +123,34 @@ class TestMachineLog(Base):
     action = Column(String(50), nullable=False)  # occupy / release / auto_release / lock / unlock / create / update / delete
     detail = Column(String(500), nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+
+
+class TestResult(Base):
+    """Test progress reported by automated test runs.
+
+    One row per (build_number, test_type, test_machine) run; repeated reports
+    for the same run update the row (upsert) instead of inserting history.
+    """
+
+    __tablename__ = "test_results"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    # Build number kept as a string to allow non-numeric build identifiers later.
+    build_number = Column(String(50), nullable=False, index=True)
+    hardware_version = Column(String(50), nullable=True)
+    software_version = Column(String(50), nullable=True)
+    test_type = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    target_amount = Column(Integer, nullable=True)
+    current_done = Column(Integer, default=0, nullable=False)
+    # Test machine name as a plain string (soft reference, no FK).
+    test_machine = Column(String(100), nullable=False)
+    # NOTE: SQLite "now" is already UTC; the "utc" modifier used by the other
+    # models treats its input as localtime and shifts UPDATE timestamps by the
+    # server's UTC offset. Dropped here so progress freshness stays accurate.
+    created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now"))
+    updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now"))
+
+    __table_args__ = (
+        UniqueConstraint("build_number", "test_type", "test_machine", name="uq_test_results_run"),
+    )

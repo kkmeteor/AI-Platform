@@ -1,0 +1,25 @@
+@baseUrl = http://localhost:8000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJ0ZW5nZmVpLm1hIiwicm9sZSI6ImFkbWluIiwiZXhwIjoxNzkxMTY2ODcwfQ.ffcOMKP2ScJmO0aUjwV_r20LVFf0tEtxQJN7dinhnkM
+
+### 上报测试结果（AgentProbe）
+POST {{baseUrl}}/test-results/report
+X-Probe-Token: sinounion
+Content-Type: application/json
+
+{
+  "BuildNumber": 13553,
+  "HardwareVersion": "Flight",
+  "SoftwareVersion": "2.5.0",
+  "TestType": "Recon",
+  "Description": "Offline recon for common parameters",
+  "TargetAmount": 2500,
+  "CurrentDone": 1026,
+  "TestMachine": "P52-BJ-S-3"
+}
+
+
+### 获取测试结果（AgentProbe）
+GET {{baseUrl}}/test-results/builds
+X-Probe-Token: sinounion
+Content-Type: application/json
+Authorization: Bearer {{token}}

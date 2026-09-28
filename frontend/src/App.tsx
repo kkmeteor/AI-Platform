@@ -10,6 +10,7 @@ import SessionPage from './pages/SessionPage';
 import LoginPage from './pages/LoginPage';
 import UserManagePage from './pages/UserManagePage';
 import TestMachinePage from './pages/TestMachinePage';
+import TestResultsPage from './pages/TestResultsPage';
 import FileManagerPage from './pages/FileManagerPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { fetchDifyApps, fetchDifyAppDetail, fetchDifyAppWorkflow, fetchAllDatasets } from './services/api';
@@ -301,6 +302,10 @@ function AppContent() {
 
     if (activeSection === 'test-machine') {
       return <TestMachinePage />;
+    }
+
+    if (activeSection === 'test-results') {
+      return <TestResultsPage />;
     }
 
     if (activeSection === 'file-manager') {

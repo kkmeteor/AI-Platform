@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Annotated, Optional, List, Literal
-from pydantic import BaseModel, BeforeValidator, field_validator
+from pydantic import AliasChoices, BaseModel, BeforeValidator, ConfigDict, Field, field_validator
 
 
 def _ensure_utc(v):
@@ -324,4 +324,81 @@ class TestMachineLogResponse(BaseModel):
 
 class TestMachineLogListResponse(BaseModel):
     items: List[TestMachineLogResponse]
+    total: int
+
+
+# ---- Test Result Schemas ----
+
+class TestResultReport(BaseModel):
+    """Payload pushed by automated test runs to POST /test-results/report.
+
+    Accepts both snake_case and PascalCase keys (the reporting side uses
+    PascalCase, e.g. "BuildNumber"); unknown future properties are ignored
+    until they are promoted to real columns via migrate_db().
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    build_number: str = Field(validation_alias=AliasChoices("build_number", "BuildNumber"))
+    test_type: str = Field(validation_alias=AliasChoices("test_type", "TestType"))
+    test_machine: str = Field(validation_alias=AliasChoices("test_machine", "TestMachine"))
+    hardware_version: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("hardware_version", "HardwareVersion")
+    )
+    software_version: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("software_version", "SoftwareVersion")
+    )
+    description: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("description", "Description")
+    )
+    target_amount: Optional[int] = Field(
+        default=None, validation_alias=AliasChoices("target_amount", "TargetAmount")
+    )
+    current_done: int = Field(
+        default=0, validation_alias=AliasChoices("current_done", "CurrentDone")
+    )
+
+    @field_validator("build_number", mode="before")
+    @classmethod
+    def _coerce_build_number(cls, v):
+        # Build numbers may be posted as numbers (13553) or strings.
+        return str(v).strip() if v is not None else v
+
+
+class TestResultReportResponse(BaseModel):
+    """Receipt echoed back to the reporting test so it can verify the round trip."""
+
+    ok: bool
+    id: Optional[int] = None
+    created: Optional[bool] = None
+
+
+class TestResultResponse(BaseModel):
+    id: int
+    build_number: str
+    hardware_version: Optional[str] = None
+    software_version: Optional[str] = None
+    test_type: str
+    description: Optional[str] = None
+    target_amount: Optional[int] = None
+    current_done: int = 0
+    test_machine: str
+    created_at: Optional[UtcDatetime] = None
+    updated_at: Optional[UtcDatetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TestResultBuildGroup(BaseModel):
+    """One build with all its test runs, used by the grouped results page."""
+
+    build_number: str
+    hardware_version: Optional[str] = None
+    software_version: Optional[str] = None
+    runs: List[TestResultResponse] = []
+
+
+class TestResultBuildListResponse(BaseModel):
+    items: List[TestResultBuildGroup]
     total: int
