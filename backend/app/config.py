@@ -124,10 +124,11 @@ class Settings(BaseSettings):
     # ── Logging ──
     # Comma-separated URL path prefixes whose successful (<400) access-log
     # lines are silenced, keeping noisy heartbeat traffic out of Docker logs
-    # (agents report to /api/test-machines/probe every few seconds).
+    # (agents report to /api/test-machines/probe every few seconds; test
+    # runners push progress to /api/test-results/report frequently).
     # Empty string disables filtering. Env: ACCESS_LOG_EXCLUDE_PATHS.
     access_log_exclude_paths: str = _json_defaults.get(
-        "accessLogExcludePaths", "/api/test-machines/probe"
+        "accessLogExcludePaths", "/api/test-machines/probe,/api/test-results/report"
     )
 
     model_config = {"extra": "ignore"}

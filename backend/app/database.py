@@ -190,6 +190,41 @@ def migrate_db():
             )
         """)
 
+    # --- test_results table creation & migration ---
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='test_results'"
+    )
+    if not cursor.fetchone():
+        conn.execute("""
+            CREATE TABLE test_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                build_number VARCHAR(50) NOT NULL,
+                hardware_version VARCHAR(50),
+                software_version VARCHAR(50),
+                test_type VARCHAR(100) NOT NULL,
+                description TEXT,
+                target_amount INTEGER,
+                current_done INTEGER NOT NULL DEFAULT 0,
+                test_machine VARCHAR(100) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT uq_test_results_run UNIQUE (build_number, test_type, test_machine)
+            )
+        """)
+        conn.execute(
+            "CREATE INDEX ix_test_results_build_number ON test_results (build_number)"
+        )
+    else:
+        cursor.execute("PRAGMA table_info(test_results)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+
+        # Future properties: append (column_name, column_type) tuples here when a
+        # new field is added to TestResult (models.py) and the schemas/UI.
+        test_result_migrations = []
+        for col_name, col_type in test_result_migrations:
+            if col_name not in existing_columns:
+                conn.execute(f"ALTER TABLE test_results ADD COLUMN {col_name} {col_type}")
+
     conn.commit()
     conn.close()
 

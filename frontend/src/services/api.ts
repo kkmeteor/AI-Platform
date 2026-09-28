@@ -541,6 +541,47 @@ export async function fetchTestMachineLogs(params: { machine_id?: number; page?:
   return res.data;
 }
 
+// ── Test Results ──
+
+export interface TestResultRun {
+  id: number;
+  build_number: string;
+  hardware_version: string | null;
+  software_version: string | null;
+  test_type: string;
+  description: string | null;
+  target_amount: number | null;
+  current_done: number;
+  test_machine: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface TestResultBuildGroup {
+  build_number: string;
+  hardware_version: string | null;
+  software_version: string | null;
+  runs: TestResultRun[];
+}
+
+export interface TestResultBuildListResponse {
+  items: TestResultBuildGroup[];
+  total: number;
+}
+
+export interface TestResultBuildListParams {
+  build_number?: string;
+  test_type?: string;
+  test_machine?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export async function fetchTestResultBuilds(params: TestResultBuildListParams = {}): Promise<TestResultBuildListResponse> {
+  const res = await api.get<TestResultBuildListResponse>('/test-results/builds', { params });
+  return res.data;
+}
+
 // ── File Manager (LAN SMB share) ──
 
 export interface FileEntry {

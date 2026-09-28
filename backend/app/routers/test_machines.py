@@ -1,12 +1,11 @@
-import hmac
 import logging
 import time
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Header
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.auth import require_role
+from app.auth import require_probe_token, require_role
 from app.config import get_settings
 from app.database import get_db
 from app.models import TestMachine, TestMachineLog, User
@@ -36,23 +35,6 @@ VALID_STATUSES = {"busy", "idle", "unknown", "offline"}
 def _utc_now() -> datetime:
     """Naive-UTC datetime (matches how SQLite stores UTC timestamps)."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
-
-
-def require_probe_token(x_token: str = Header(default="", alias="X-Probe-Token")) -> bool:
-    """Validate the shared agent probe token (X-Probe-Token header).
-
-    Independent of the user JWT flow: agent services run headless and cannot
-    hold a user session. A missing configured token means the endpoint is
-    intentionally disabled.
-    """
-    if not settings.probe_token:
-        raise HTTPException(
-            status_code=503,
-            detail="Probe endpoint not configured (probe_token is empty)",
-        )
-    if not x_token or not hmac.compare_digest(x_token, settings.probe_token):
-        raise HTTPException(status_code=401, detail="Invalid probe token")
-    return True
 
 
 # ── helpers ──
