@@ -1,0 +1,69 @@
+1 背景描述
+
+当前系统存在什么问题或不足？
+平台已具备测试机状态监控能力（AgentProbe 探针定期心跳上报机器在线/忙碌状态），但自动化测试的进度与结果数据仅存在于测试机本地（测试脚本输出、日志），平台侧不可视：某个 Build 的测试跑到哪个阶段、完成比例多少、是否完成，均无法在平台获知；同一 Build 在多个测试机、多种测试类型（如 Recon）上的执行情况也没有统一汇总入口。
+
+用户/客户反馈了什么痛点？
+测试进度查询依赖线下沟通：需要人工询问测试执行人或登录测试机查看日志，效率低、不透明、不及时。用户希望平台按 Build 分组汇总展示各测试运行（BuildNumber + TestType + TestMachine）的进度（CurrentDone / TargetAmount）与状态，并支持实时刷新查看。
+
+是否有外部驱动因素（如法规变更、竞品对标）？
+无外部法规或竞品驱动，属于内部测试流程数字化演进需求：与既有测试机监控（probe 探针体系）一脉相承，补齐"机器状态 → 测试进度/结果"的监控闭环。
+
+2 业务目标
+
+目标：打通自动化测试"主动上报 → 平台持久化 → 按 Build 分组可视化展示"的测试进度闭环，将测试进度查询从线下询问/登录测试机查看变为平台页面自助实时查看。
+
+成功指标：
+- 自动化测试上报后，平台页面上 30 秒内（自动刷新周期）可见最新进度；
+- 同一测试运行（BuildNumber + TestType + TestMachine）重复上报不产生重复记录，仅更新进度（联合键唯一，数据一致性 100%）；
+- 测试进度查询不再依赖线下询问测试执行人。
+
+3 业务逻辑变更
+
+当前行为：
+自动化测试在测试机上本地执行，进度数据仅存在于测试脚本输出/日志中；平台"测试机状态"页仅展示机器心跳（在线/忙碌），不展示测试内容与进度，进度获取与沟通依赖线下渠道。
+
+期望行为：
+新增测试结果上报与展示能力：
+a) 上报入口（供无用户会话的自动化测试进程调用）：POST /api/test-results/report，使用共享探针令牌（X-Probe-Token，与现有 is-busy.py 探针一致）认证；上报字段：BuildNumber、HardwareVersion、SoftwareVersion、TestType、Description、TargetAmount、CurrentDone、TestMachine；必填 BuildNumber、TestType、TestMachine，其余可选。
+b) 平台存储：SQLite 新增 test_results 表持久化测试结果。
+c) 展示入口：前端新增"测试结果"页（侧边栏 Online 组，"测试机状态"之后），按 Build 分组折叠展示：
+- 组头：构建号、版本信息（HardwareVersion / SoftwareVersion）、完成汇总（x/y 完成）；
+- 组内每条测试运行：TestType、TestMachine、Description、进度条（CurrentDone/TargetAmount）、状态（进行中/已完成）、最后更新时间；
+- 支持手动刷新 + 自动刷新（默认开启，30 秒轮询）；支持 BuildNumber 模糊搜索、TestType / TestMachine 筛选与分页。
+
+业务规则：
+- 唯一性与去重：以 BuildNumber + TestType + TestMachine 为联合唯一键，同键重复上报执行 upsert（更新进度与更新时间），仅保留最新状态，不做历史流水；
+- 字段兼容：字段名同时兼容 PascalCase 与 snake_case；BuildNumber 兼容数字（13553）与字符串（"13553"）；未知字段忽略、接口不报错；
+- 认证与错误码：错误/缺失 X-Probe-Token → 401；服务端未配置 probe_token → 503（与现有探针端点行为一致）；
+- 状态判定："已完成" = CurrentDone ≥ TargetAmount 且 TargetAmount > 0，否则"进行中"；
+- 查询排序：按构建号倒序（纯数字按数值排序）分组，组内 runs 按 TestType + TestMachine 排序；查询接口对所有登录角色（admin / editor / viewer）开放；
+- 数据演进：全固定字段建列（类型严格、可索引筛选）；未来新增 property 走既有数据库自动迁移流程（加列），前端同步加列。
+
+4 测试用例
+
+核心测试场景：
+1. 首次上报新联合键：正确探针令牌 + 完整字段上报 → 返回 created: true，记录正常入库；
+2. 同键重复上报：修改 CurrentDone 后再次上报 → 返回 created: false 且记录 id 不变，进度已更新；
+3. 认证异常：错误/缺失 X-Probe-Token → 401；未配置 probe_token → 503；
+4. 字段兼容：BuildNumber 传数字 13553 或字符串 "13553" 均正常入库；PascalCase 与 snake_case 键名均可解析；上报未知字段 → 接口不报错；
+5. 查询接口（登录 JWT）：按 Build 分组、构建号倒序、组内按 test_type + test_machine 排序；模糊搜索、精确筛选、分页均正确；
+6. 前端交互：分组折叠渲染、进度条百分比、状态标签正确；筛选、分页、手动刷新与 30 秒自动刷新可用。
+
+回归测试范围：
+1. 测试机探针端点 /api/test-machines/probe：认证重构（require_probe_token 迁移）后行为与错误码（401/503）保持不变；
+2. 测试机状态页现有功能（心跳、忙碌状态展示）不受影响；
+3. 前端构建：cd frontend && npm run build 通过。
+
+5 验收标准
+
+1. 错误 / 缺失 X-Probe-Token 上报 → 401；未配置 probe_token → 503（与现有探针端点行为一致）；
+2. 首次上报新联合键 → 返回 created: true；同键再次上报（改 CurrentDone）→ created: false 且记录 id 不变；
+3. BuildNumber 传数字（13553）或字符串（"13553"）均正常入库；PascalCase 与 snake_case 键名均可解析；
+4. 未来新增未知字段上报 → 接口不报错（字段忽略，走迁移流程后方可入库）；
+5. 查询接口按 Build 分组：构建号倒序（纯数字按数值排序）、组内 runs 按 test_type + test_machine 排序；
+6. 前端页面正确渲染分组、进度条百分比与状态标签；筛选与分页可用；
+7. cd frontend && npm run build 通过（tsc 无类型错误）；
+8. 现有测试机探针端点（/api/test-machines/probe）行为不受 auth.py 重构影响。
+
+验收方式：演示+测试
