@@ -235,6 +235,14 @@ export default function TestResultsPage() {
                         render: (_: unknown, run: TestResultRun) => renderProgress(run),
                       },
                       {
+                        title: '失败次数',
+                        dataIndex: 'failed_count',
+                        width: 90,
+                        render: (v: number) => (
+                          <span className={v > 0 ? 'tr-failed-count has-failure' : 'tr-failed-count'}>{v ?? 0}</span>
+                        ),
+                      },
+                      {
                         title: '状态',
                         key: 'status',
                         width: 100,

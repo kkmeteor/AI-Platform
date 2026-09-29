@@ -205,6 +205,7 @@ def migrate_db():
                 description TEXT,
                 target_amount INTEGER,
                 current_done INTEGER NOT NULL DEFAULT 0,
+                failed_count INTEGER NOT NULL DEFAULT 0,
                 test_machine VARCHAR(100) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -220,7 +221,10 @@ def migrate_db():
 
         # Future properties: append (column_name, column_type) tuples here when a
         # new field is added to TestResult (models.py) and the schemas/UI.
-        test_result_migrations = []
+        test_result_migrations = [
+            # CurrentResult round reports: false increments this counter.
+            ("failed_count", "INTEGER NOT NULL DEFAULT 0"),
+        ]
         for col_name, col_type in test_result_migrations:
             if col_name not in existing_columns:
                 conn.execute(f"ALTER TABLE test_results ADD COLUMN {col_name} {col_type}")

@@ -552,6 +552,7 @@ export interface TestResultRun {
   description: string | null;
   target_amount: number | null;
   current_done: number;
+  failed_count: number;
   test_machine: string;
   created_at: string | null;
   updated_at: string | null;

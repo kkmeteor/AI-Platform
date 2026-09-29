@@ -143,6 +143,8 @@ class TestResult(Base):
     description = Column(Text, nullable=True)
     target_amount = Column(Integer, nullable=True)
     current_done = Column(Integer, default=0, nullable=False)
+    # Rounds that reported a failure (CurrentResult=false) for this run.
+    failed_count = Column(Integer, default=0, nullable=False)
     # Test machine name as a plain string (soft reference, no FK).
     test_machine = Column(String(100), nullable=False)
     # NOTE: SQLite "now" is already UTC; the "utc" modifier used by the other

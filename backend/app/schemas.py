@@ -335,6 +335,10 @@ class TestResultReport(BaseModel):
     Accepts both snake_case and PascalCase keys (the reporting side uses
     PascalCase, e.g. "BuildNumber"); unknown future properties are ignored
     until they are promoted to real columns via migrate_db().
+
+    current_result describes the just-finished test round: True advances the
+    run's current_done by one, False advances its failed_count by one. The
+    counters are server-side increments, never absolute values.
     """
 
     model_config = ConfigDict(populate_by_name=True)
@@ -354,8 +358,8 @@ class TestResultReport(BaseModel):
     target_amount: Optional[int] = Field(
         default=None, validation_alias=AliasChoices("target_amount", "TargetAmount")
     )
-    current_done: int = Field(
-        default=0, validation_alias=AliasChoices("current_done", "CurrentDone")
+    current_result: Optional[bool] = Field(
+        default=None, validation_alias=AliasChoices("current_result", "CurrentResult")
     )
 
     @field_validator("build_number", mode="before")
@@ -382,6 +386,7 @@ class TestResultResponse(BaseModel):
     description: Optional[str] = None
     target_amount: Optional[int] = None
     current_done: int = 0
+    failed_count: int = 0
     test_machine: str
     created_at: Optional[UtcDatetime] = None
     updated_at: Optional[UtcDatetime] = None

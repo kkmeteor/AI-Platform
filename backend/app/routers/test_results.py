@@ -6,6 +6,8 @@ records grouped by build for the results page.
 
 One row is kept per (build_number, test_type, test_machine) run; repeated
 reports for the same run update the row (upsert) instead of appending history.
+Each report describes one finished test round through current_result: True
+advances current_done by one, False advances failed_count by one.
 """
 
 import logging
@@ -33,12 +35,21 @@ _RUN_KEY_FIELDS = ("build_number", "test_type", "test_machine")
 
 
 def _apply_report(result: TestResult, payload: TestResultReport) -> None:
-    """Copy the fields provided in this report onto the row (exclude run key)."""
+    """Copy plain fields from this report onto the row (exclude run key).
+
+    current_result is not a column: it advances the round counters instead
+    (True -> current_done + 1, False -> failed_count + 1).
+    """
     updates = payload.model_dump(exclude_unset=True)
     for key in _RUN_KEY_FIELDS:
         updates.pop(key, None)
+    round_result = updates.pop("current_result", None)
     for key, value in updates.items():
         setattr(result, key, value)
+    if round_result is True:
+        result.current_done = (result.current_done or 0) + 1
+    elif round_result is False:
+        result.failed_count = (result.failed_count or 0) + 1
 
 
 @router.post("/test-results/report", response_model=TestResultReportResponse)
@@ -51,7 +62,9 @@ def report_test_result(
 
     The run is identified by (build_number, test_type, test_machine); the first
     report inserts the row, later reports update progress fields. Fields omitted
-    from a report keep their previous values.
+    from a report keep their previous values. current_result is applied as a
+    server-side increment: True -> current_done + 1 (round passed), False ->
+    failed_count + 1 (round failed).
     """
 
     def _find() -> TestResult | None:
@@ -101,12 +114,13 @@ def report_test_result(
         )
     else:
         logger.debug(
-            "Test result updated: build=%s type=%s machine=%s done=%s/%s",
+            "Test result updated: build=%s type=%s machine=%s done=%s/%s failed=%s",
             result.build_number,
             result.test_type,
             result.test_machine,
             result.current_done,
             result.target_amount,
+            result.failed_count,
         )
     return TestResultReportResponse(ok=True, id=result.id, created=created)
 
