@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "校验重点：scope/owner_id/owner_name 在 model→schema→响应→前端类型→分组 UI 全链路无遗漏；可见性与管理权限仅在后端强制（前端隐藏按钮不算），未认证 401 与角色矩阵逐项核对"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "校验重点：分组渲染是否复用 CollapsibleGroup、卡片渲染是否单一来源、权限判断是否集中一处、是否存在重复的分组计算或字段引用遗漏"}

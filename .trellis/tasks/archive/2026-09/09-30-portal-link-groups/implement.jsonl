@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "本次改动贯穿 DB→API→前端三层：PortalLink 新增 scope/owner_id/owner_name 需在模型、schema、接口过滤与前端类型/UI 间保持数据流一致；权限与可见性判定必须在后端强制，按该指南检查跨层边界与字段透传"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "前端分组渲染必须复用现有 CollapsibleGroup 组件、卡片渲染逻辑保持单一来源；后端权限判断抽取为单一 helper 供多个接口复用；为字段新增涉及多处引用，遵循其'修改字段/常量前先全局搜索'的规则"}
