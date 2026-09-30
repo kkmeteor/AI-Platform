@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, Float, TIMESTAMP, ForeignKey, UniqueConstraint
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -34,8 +35,25 @@ class PortalLink(Base):
     category = Column(String(50), default="custom")
     sort_order = Column(Integer, default=0)
     is_builtin = Column(Boolean, default=False, nullable=False)
+    # Visibility group: "personal" links are only visible to their owner,
+    # "public" links are visible to everyone (builtin and legacy rows are public).
+    scope = Column(String(20), default="personal", nullable=False)
+    # Creating user; NULL for builtin links and legacy rows created before
+    # per-user grouping existed.
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
     updated_at = Column(TIMESTAMP, server_default=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"), onupdate=func.strftime("%Y-%m-%d %H:%M:%S", "now", "utc"))
+
+    # Owning user; eager-loaded so list responses can serialize owner_name
+    # without an N+1 query.
+    owner = relationship("User", lazy="joined")
+
+    @property
+    def owner_name(self):
+        """Owner display name for API responses (falls back to username)."""
+        if not self.owner:
+            return None
+        return self.owner.display_name or self.owner.username
 
 
 class McpServer(Base):

@@ -229,6 +229,28 @@ def migrate_db():
             if col_name not in existing_columns:
                 conn.execute(f"ALTER TABLE test_results ADD COLUMN {col_name} {col_type}")
 
+    # --- portal_links table migration ---
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='portal_links'"
+    )
+    if cursor.fetchone():
+        cursor.execute("PRAGMA table_info(portal_links)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+
+        if "scope" not in existing_columns:
+            # Visibility group: "personal" (owner only) vs "public" (everyone).
+            conn.execute(
+                "ALTER TABLE portal_links ADD COLUMN scope VARCHAR(20) NOT NULL DEFAULT 'personal'"
+            )
+            # Rows created before per-user grouping were visible to everyone;
+            # move them all into the public group to keep that behavior. This
+            # UPDATE runs only once, guarded by the column-missing check above.
+            conn.execute("UPDATE portal_links SET scope='public'")
+        if "owner_id" not in existing_columns:
+            conn.execute(
+                "ALTER TABLE portal_links ADD COLUMN owner_id INTEGER REFERENCES users(id)"
+            )
+
     conn.commit()
     conn.close()
 

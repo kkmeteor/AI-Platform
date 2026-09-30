@@ -374,6 +374,8 @@ export async function fetchDifyAppWorkflow(appId: string): Promise<any> {
 
 // ── Portal Links ──
 
+export type PortalLinkScope = 'personal' | 'public';
+
 export interface PortalLink {
   id: number;
   name: string;
@@ -384,6 +386,9 @@ export interface PortalLink {
   category: string;
   sort_order: number;
   is_builtin: boolean;
+  scope: PortalLinkScope;
+  owner_id: number | null;
+  owner_name: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -394,6 +399,7 @@ export interface PortalLinkCreate {
   icon?: string;
   description?: string;
   background_image?: string;
+  scope?: PortalLinkScope;
 }
 
 export interface PortalLinkUpdate {
@@ -402,6 +408,7 @@ export interface PortalLinkUpdate {
   icon?: string;
   description?: string;
   background_image?: string;
+  scope?: PortalLinkScope;
 }
 
 export async function fetchPortalLinks(): Promise<PortalLink[]> {

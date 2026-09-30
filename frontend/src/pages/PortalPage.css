@@ -58,6 +58,13 @@
   height: 16px;
 }
 
+/* Group container: spacing between collapsible groups (header styles live in CollapsibleGroup.css) */
+.portal-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
 /* Grid */
 .portal-grid {
   display: grid;
@@ -226,6 +233,14 @@
   color: var(--text-tertiary);
 }
 
+/* Empty group hint (inside a CollapsibleGroup) */
+.portal-group-empty-hint {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  margin: 0;
+  padding: 4px 0;
+}
+
 /* Modal form */
 .portal-form {
   display: flex;
@@ -246,7 +261,8 @@
 }
 
 .portal-form-field input,
-.portal-form-field textarea {
+.portal-form-field textarea,
+.portal-form-field select {
   padding: 8px 12px;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
@@ -258,7 +274,8 @@
 }
 
 .portal-form-field input:focus,
-.portal-form-field textarea:focus {
+.portal-form-field textarea:focus,
+.portal-form-field select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-light);

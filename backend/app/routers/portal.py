@@ -4,9 +4,10 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.auth import require_role
+from app.auth import get_current_user, require_role
 from app.config import get_settings
 from app.database import get_db
 from app.models import PortalLink, User
@@ -18,11 +19,39 @@ settings = get_settings()
 ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp", "image/gif"}
 
 
+def _assert_can_manage(link: PortalLink, user: User, for_background: bool = False) -> None:
+    """Raise 403 unless the user is allowed to modify the given link.
+
+    admin: any non-builtin link. Editing a builtin link's background image
+    remains allowed (for_background=True keeps the previous behavior).
+    editor: only their own personal links.
+    """
+    if user.role == "admin":
+        if link.is_builtin and not for_background:
+            raise HTTPException(status_code=403, detail="Cannot edit a builtin link")
+        return
+    # editor (viewer/guest is already rejected by require_role)
+    if link.is_builtin or link.scope != "personal" or link.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only manage your own personal links")
+
+
 @router.get("/portal/links", response_model=list[PortalLinkResponse])
-def list_portal_links(db: Session = Depends(get_db)):
-    """Get all portal links, builtin first, then by sort_order."""
+def list_portal_links(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get the portal links visible to the current user, builtin first, then by sort_order.
+
+    admin sees every link; other roles see public links plus their own
+    personal links.
+    """
+    query = db.query(PortalLink)
+    if current_user.role != "admin":
+        query = query.filter(
+            or_(PortalLink.scope == "public", PortalLink.owner_id == current_user.id)
+        )
     links = (
-        db.query(PortalLink)
+        query
         .order_by(PortalLink.is_builtin.desc(), PortalLink.sort_order.asc(), PortalLink.created_at.asc())
         .all()
     )
@@ -35,7 +64,10 @@ def create_portal_link(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role("admin", "editor")),
 ):
-    """Add a custom portal link."""
+    """Add a custom portal link owned by the current user."""
+    if payload.scope == "public" and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can create public links")
+
     max_order = db.query(PortalLink).order_by(PortalLink.sort_order.desc()).first()
     next_order = (max_order.sort_order + 1) if max_order else 0
 
@@ -45,6 +77,8 @@ def create_portal_link(
         icon=payload.icon or "🔗",
         description=payload.description,
         sort_order=next_order,
+        scope=payload.scope or "personal",
+        owner_id=current_user.id,
     )
     db.add(link)
     db.commit()
@@ -63,10 +97,12 @@ def update_portal_link(
     link = db.query(PortalLink).filter(PortalLink.id == link_id).first()
     if not link:
         raise HTTPException(status_code=404, detail="Portal link not found")
-    if link.is_builtin:
-        raise HTTPException(status_code=403, detail="Cannot edit a builtin link")
+    _assert_can_manage(link, current_user)
 
     update_data = payload.model_dump(exclude_unset=True)
+    if update_data.get("scope") == "public" and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can create public links")
+
     for key, value in update_data.items():
         setattr(link, key, value)
     db.commit()
@@ -85,6 +121,7 @@ async def upload_background(
     link = db.query(PortalLink).filter(PortalLink.id == link_id).first()
     if not link:
         raise HTTPException(status_code=404, detail="Portal link not found")
+    _assert_can_manage(link, current_user, for_background=True)
 
     if file.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(status_code=400, detail="Only image files (png, jpeg, webp, gif) are allowed")
@@ -127,6 +164,7 @@ def delete_background(
     link = db.query(PortalLink).filter(PortalLink.id == link_id).first()
     if not link:
         raise HTTPException(status_code=404, detail="Portal link not found")
+    _assert_can_manage(link, current_user, for_background=True)
 
     # 删除旧文件
     if link.background_image:
@@ -153,6 +191,7 @@ def delete_portal_link(
         raise HTTPException(status_code=404, detail="Portal link not found")
     if link.is_builtin:
         raise HTTPException(status_code=403, detail="Cannot delete a builtin link")
+    _assert_can_manage(link, current_user)
 
     db.delete(link)
     db.commit()

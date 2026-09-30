@@ -72,6 +72,9 @@ class PortalLinkCreate(BaseModel):
     icon: Optional[str] = "🔗"
     description: Optional[str] = None
     background_image: Optional[str] = None
+    # Visibility group: "personal" (owner only, default) or "public" (everyone);
+    # only admin may create public links.
+    scope: Optional[Literal["personal", "public"]] = "personal"
 
 
 class PortalLinkUpdate(BaseModel):
@@ -80,6 +83,8 @@ class PortalLinkUpdate(BaseModel):
     icon: Optional[str] = None
     description: Optional[str] = None
     background_image: Optional[str] = None
+    # Omitted -> scope is left unchanged; "public" requires admin.
+    scope: Optional[Literal["personal", "public"]] = None
 
 
 class PortalLinkResponse(BaseModel):
@@ -92,6 +97,10 @@ class PortalLinkResponse(BaseModel):
     category: Optional[str] = "custom"
     sort_order: int = 0
     is_builtin: bool = False
+    # Visibility group plus owner info (owner_name comes from the model property).
+    scope: str = "personal"
+    owner_id: Optional[int] = None
+    owner_name: Optional[str] = None
     created_at: Optional[UtcDatetime] = None
     updated_at: Optional[UtcDatetime] = None
 
