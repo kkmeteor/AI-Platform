@@ -36,6 +36,20 @@ Questions to answer:
 
 ---
 
+## Grouped Card Lists (CollapsibleGroup)
+
+**Convention**: any card-list page that renders grouped sections must reuse `frontend/src/components/CollapsibleGroup.tsx` — never re-implement collapse UI.
+
+**Why**: consistent collapse behavior, arrow animation, and persisted state per group without duplicated code.
+
+**How**:
+
+- The page keeps its own grouping logic (extract keys, ordering) and renders one `CollapsibleGroup` per group, passing `title` / `count` / `storageKey`; children is the card grid.
+- `storageKey` must be unique per page — group (e.g. `portal-group-collapsed-public`, `portal-group-collapsed-user-${ownerId}`, `tm-group-collapsed-${tag}`) so collapse state persists across sessions.
+- Reference usages: `TestMachinePage.tsx`, `TestResultsPage.tsx`, `PortalPage.tsx`.
+
+---
+
 ## Styling Patterns
 
 <!-- How styles are applied (CSS modules, styled-components, Tailwind, etc.) -->
