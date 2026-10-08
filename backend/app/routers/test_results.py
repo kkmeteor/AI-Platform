@@ -168,6 +168,7 @@ def list_test_result_builds(
                 build_number=build,
                 hardware_version=first.hardware_version,
                 software_version=first.software_version,
+                sdk_version=first.sdk_version,
                 runs=[TestResultResponse.model_validate(r) for r in runs],
             )
         )

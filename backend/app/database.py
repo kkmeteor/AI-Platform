@@ -201,6 +201,7 @@ def migrate_db():
                 build_number VARCHAR(50) NOT NULL,
                 hardware_version VARCHAR(50),
                 software_version VARCHAR(50),
+                sdk_version VARCHAR(50),
                 test_type VARCHAR(100) NOT NULL,
                 description TEXT,
                 target_amount INTEGER,
@@ -224,6 +225,7 @@ def migrate_db():
         test_result_migrations = [
             # CurrentResult round reports: false increments this counter.
             ("failed_count", "INTEGER NOT NULL DEFAULT 0"),
+            ("sdk_version", "VARCHAR(50)"),
         ]
         for col_name, col_type in test_result_migrations:
             if col_name not in existing_columns:

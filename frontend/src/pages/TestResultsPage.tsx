@@ -193,7 +193,7 @@ export default function TestResultsPage() {
             {groups.map((g, idx) => {
               const done = g.runs.filter(isCompleted).length;
               const allDone = done === g.runs.length && g.runs.length > 0;
-              const version = [g.hardware_version, g.software_version].filter(Boolean).join(' / ');
+              const version = [g.hardware_version, g.software_version, g.sdk_version].filter(Boolean).join(' / ');
               return (
                 <CollapsibleGroup
                   key={g.build_number}

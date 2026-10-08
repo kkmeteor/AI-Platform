@@ -157,6 +157,7 @@ class TestResult(Base):
     build_number = Column(String(50), nullable=False, index=True)
     hardware_version = Column(String(50), nullable=True)
     software_version = Column(String(50), nullable=True)
+    sdk_version = Column(String(50), nullable=True)
     test_type = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     target_amount = Column(Integer, nullable=True)

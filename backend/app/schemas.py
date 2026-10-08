@@ -361,6 +361,9 @@ class TestResultReport(BaseModel):
     software_version: Optional[str] = Field(
         default=None, validation_alias=AliasChoices("software_version", "SoftwareVersion")
     )
+    sdk_version: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("sdk_version", "SdkVersion", "SDKVersion")
+    )
     description: Optional[str] = Field(
         default=None, validation_alias=AliasChoices("description", "Description")
     )
@@ -391,6 +394,7 @@ class TestResultResponse(BaseModel):
     build_number: str
     hardware_version: Optional[str] = None
     software_version: Optional[str] = None
+    sdk_version: Optional[str] = None
     test_type: str
     description: Optional[str] = None
     target_amount: Optional[int] = None
@@ -410,6 +414,7 @@ class TestResultBuildGroup(BaseModel):
     build_number: str
     hardware_version: Optional[str] = None
     software_version: Optional[str] = None
+    sdk_version: Optional[str] = None
     runs: List[TestResultResponse] = []
 
 

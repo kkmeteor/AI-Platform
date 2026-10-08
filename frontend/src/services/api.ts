@@ -555,6 +555,7 @@ export interface TestResultRun {
   build_number: string;
   hardware_version: string | null;
   software_version: string | null;
+  sdk_version: string | null;
   test_type: string;
   description: string | null;
   target_amount: number | null;
@@ -569,6 +570,7 @@ export interface TestResultBuildGroup {
   build_number: string;
   hardware_version: string | null;
   software_version: string | null;
+  sdk_version: string | null;
   runs: TestResultRun[];
 }
 
