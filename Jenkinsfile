@@ -60,14 +60,14 @@ pipeline {
                                 REGISTRY = '10.10.11.194:1000'
                                 IMAGE_NAME = 'dcloud-market-backend'
                                 FULL_IMAGE = "${env.REGISTRY}/${env.IMAGE_NAME}"
+                                // Keep branch-scoped: script-level env writes race across parallel branches
+                                IMAGE_WITH_TAG = "${env.REGISTRY}/${env.IMAGE_NAME}:${params.TAG?.trim() ?: env.BUILD_NUMBER}"
                                 BUILD_CONTEXT = '.\\backend'
                             }
                             stages {
                                 stage('Backend - Build') {
                                     steps {
                                         script {
-                                            def tag = params.TAG?.trim() ? params.TAG : "${env.BUILD_NUMBER}"
-                                            env.IMAGE_WITH_TAG = "${env.FULL_IMAGE}:${tag}"
                                             def tags = "-t ${env.IMAGE_WITH_TAG}"
                                             if (params.PUSH_LATEST) {
                                                 tags += " -t ${env.FULL_IMAGE}:latest"
@@ -79,6 +79,7 @@ pipeline {
                                 }
                                 stage('Backend - Push') {
                                     steps {
+                                        echo "Pushing: ${env.IMAGE_WITH_TAG}"
                                         bat 'docker push %IMAGE_WITH_TAG%'
                                         script {
                                             if (params.PUSH_LATEST) {
@@ -106,14 +107,14 @@ pipeline {
                                 REGISTRY = '10.10.11.194:1000'
                                 IMAGE_NAME = 'dcloud-market-frontend'
                                 FULL_IMAGE = "${env.REGISTRY}/${env.IMAGE_NAME}"
+                                // Keep branch-scoped: script-level env writes race across parallel branches
+                                IMAGE_WITH_TAG = "${env.REGISTRY}/${env.IMAGE_NAME}:${params.TAG?.trim() ?: env.BUILD_NUMBER}"
                                 BUILD_CONTEXT = '.\\frontend'
                             }
                             stages {
                                 stage('Frontend - Build') {
                                     steps {
                                         script {
-                                            def tag = params.TAG?.trim() ? params.TAG : "${env.BUILD_NUMBER}"
-                                            env.IMAGE_WITH_TAG = "${env.FULL_IMAGE}:${tag}"
                                             def tags = "-t ${env.IMAGE_WITH_TAG}"
                                             if (params.PUSH_LATEST) {
                                                 tags += " -t ${env.FULL_IMAGE}:latest"
@@ -125,6 +126,7 @@ pipeline {
                                 }
                                 stage('Frontend - Push') {
                                     steps {
+                                        echo "Pushing: ${env.IMAGE_WITH_TAG}"
                                         bat 'docker push %IMAGE_WITH_TAG%'
                                         script {
                                             if (params.PUSH_LATEST) {
