@@ -16,6 +16,10 @@
     "baseDn": "DC=yourdomain,DC=com",
     "userPrefix": "YOURDOMAIN\\"
   },
+  "localAdmin": {
+    "username": "admin",
+    "password": "admin123"
+  },
   "jwtSecretKey": "change-me-to-a-random-secret",
   "jwtExpireHours": 168,
   "probeToken": "change-me-to-a-shared-probe-token",
