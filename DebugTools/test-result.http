@@ -1,4 +1,5 @@
 @baseUrl = http://10.10.11.194:8000/api
+@baseUrl = http://localhost:8000/api
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidXNlcm5hbWUiOiJ0ZW5nZmVpLm1hIiwicm9sZSI6ImFkbWluIiwiZXhwIjoxNzkxMTY2ODcwfQ.ffcOMKP2ScJmO0aUjwV_r20LVFf0tEtxQJN7dinhnkM
 
 ### 上报测试结果（AgentProbe）
@@ -7,15 +8,15 @@ X-Probe-Token: sinounion
 Content-Type: application/json
 
 {
-  "build_number": "13553",
+  "build_number": "13554",
   "test_type": "Test1",
-  "test_machine": "P52-BJ-S-2",
+  "test_machine": "P52-BJ-S-3",
   "hardware_version": "Flight",
   "software_version": "2.5.0",
   "sdk_version": "1.0.0",
   "description": "string",
-  "target_amount": "1000",
-  "current_result": "false"
+  "target_amount": "5",
+  "current_result": "true"
 }
 
 ### 获取测试结果（AgentProbe）

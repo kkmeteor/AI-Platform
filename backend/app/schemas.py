@@ -389,6 +389,12 @@ class TestResultReportResponse(BaseModel):
     created: Optional[bool] = None
 
 
+class TestResultUpdate(BaseModel):
+    """Manual status override for one run, used by the results page (terminate)."""
+
+    terminated: bool
+
+
 class TestResultResponse(BaseModel):
     id: int
     build_number: str
@@ -400,6 +406,7 @@ class TestResultResponse(BaseModel):
     target_amount: Optional[int] = None
     current_done: int = 0
     failed_count: int = 0
+    terminated: bool = False
     test_machine: str
     created_at: Optional[UtcDatetime] = None
     updated_at: Optional[UtcDatetime] = None

@@ -164,6 +164,9 @@ class TestResult(Base):
     current_done = Column(Integer, default=0, nullable=False)
     # Rounds that reported a failure (CurrentResult=false) for this run.
     failed_count = Column(Integer, default=0, nullable=False)
+    # True = a user manually marked this (stale, unfinished) run as terminated
+    # from the results page. Cleared when a later report arrives (run alive).
+    terminated = Column(Boolean, default=False, nullable=False)
     # Test machine name as a plain string (soft reference, no FK).
     test_machine = Column(String(100), nullable=False)
     # NOTE: SQLite "now" is already UTC; the "utc" modifier used by the other

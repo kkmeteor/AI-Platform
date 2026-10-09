@@ -561,6 +561,7 @@ export interface TestResultRun {
   target_amount: number | null;
   current_done: number;
   failed_count: number;
+  terminated: boolean;
   test_machine: string;
   created_at: string | null;
   updated_at: string | null;
@@ -589,6 +590,16 @@ export interface TestResultBuildListParams {
 
 export async function fetchTestResultBuilds(params: TestResultBuildListParams = {}): Promise<TestResultBuildListResponse> {
   const res = await api.get<TestResultBuildListResponse>('/test-results/builds', { params });
+  return res.data;
+}
+
+export interface TestResultUpdateParams {
+  terminated: boolean;
+}
+
+/** 手动设置单个运行的终止标记（仅 admin/editor 可用） */
+export async function updateTestResultRun(id: number, params: TestResultUpdateParams): Promise<TestResultRun> {
+  const res = await api.patch<TestResultRun>(`/test-results/${id}`, params);
   return res.data;
 }
 

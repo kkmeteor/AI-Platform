@@ -91,23 +91,101 @@
   gap: 28px;
 }
 
-.tr-group-title {
+/* 层级树：状态 → 硬件 → 版本信息，逐级缩进 */
+.tr-lvl2,
+.tr-lvl3 {
+  margin-left: 16px;
+}
+
+.tr-lvl2 + .tr-lvl2,
+.tr-lvl3 + .tr-lvl3 {
+  margin-top: 20px;
+}
+
+.tr-node-title {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
-.tr-group-build {
+/* 状态层：色点 + 文案 */
+.tr-status-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tr-status-warning {
+  background: #f59e0b;
+}
+
+.tr-status-progress {
+  background: #3b82f6;
+}
+
+.tr-status-completed {
+  background: #16a34a;
+}
+
+.tr-status-terminated {
+  background: #6b7280;
+}
+
+.tr-node-status {
   font-size: 15px;
   font-weight: 650;
   color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
-.tr-group-version {
-  font-size: 12px;
-  font-weight: 400;
+/* 硬件层 */
+.tr-node-hw {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* 版本信息层：软件版本 · Build # · SDK */
+.tr-node-sw {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tr-node-sep {
+  font-size: 13px;
   color: var(--text-tertiary);
+}
+
+.tr-node-build {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.tr-node-sdk {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+/* 可交互状态标签：仅「警告」可点击标记为终止 */
+.tr-status-tag-clickable {
+  cursor: pointer;
+}
+
+.tr-status-tag-clickable:hover {
+  opacity: 0.8;
+}
+
+.tr-status-tag-clickable.pending {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .tr-group-summary {
@@ -217,5 +295,11 @@
   .tr-filters .ant-input-search,
   .tr-filters .ant-select {
     width: 100% !important;
+  }
+
+  /* 窄屏下减小层级缩进，避免内容过窄 */
+  .tr-lvl2,
+  .tr-lvl3 {
+    margin-left: 10px;
   }
 }

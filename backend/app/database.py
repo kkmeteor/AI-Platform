@@ -207,6 +207,7 @@ def migrate_db():
                 target_amount INTEGER,
                 current_done INTEGER NOT NULL DEFAULT 0,
                 failed_count INTEGER NOT NULL DEFAULT 0,
+                terminated BOOLEAN NOT NULL DEFAULT 0,
                 test_machine VARCHAR(100) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -226,6 +227,8 @@ def migrate_db():
             # CurrentResult round reports: false increments this counter.
             ("failed_count", "INTEGER NOT NULL DEFAULT 0"),
             ("sdk_version", "VARCHAR(50)"),
+            # Manual termination flag set from the results page (warning group).
+            ("terminated", "BOOLEAN NOT NULL DEFAULT 0"),
         ]
         for col_name, col_type in test_result_migrations:
             if col_name not in existing_columns:

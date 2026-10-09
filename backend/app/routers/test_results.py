@@ -25,6 +25,7 @@ from app.schemas import (
     TestResultReport,
     TestResultReportResponse,
     TestResultResponse,
+    TestResultUpdate,
 )
 
 router = APIRouter()
@@ -50,6 +51,9 @@ def _apply_report(result: TestResult, payload: TestResultReport) -> None:
         result.current_done = (result.current_done or 0) + 1
     elif round_result is False:
         result.failed_count = (result.failed_count or 0) + 1
+    # A report means the run is alive again: drop a manual termination so it
+    # re-enters the normal stale/progress classification.
+    result.terminated = False
 
 
 @router.post("/test-results/report", response_model=TestResultReportResponse)
@@ -174,3 +178,40 @@ def list_test_result_builds(
         )
 
     return TestResultBuildListResponse(items=items, total=total)
+
+
+@router.patch("/test-results/{result_id}", response_model=TestResultResponse)
+def update_test_result(
+    result_id: int,
+    payload: TestResultUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin", "editor")),
+):
+    """Manually mark a run as terminated (results page warning-group action).
+
+    Termination is only allowed for unfinished runs: a completed run has
+    nothing left to stop. The flag is cleared automatically when a later
+    report arrives for the same run.
+    """
+    result = db.query(TestResult).filter(TestResult.id == result_id).first()
+    if result is None:
+        raise HTTPException(status_code=404, detail="Test result not found")
+
+    is_completed = (
+        result.target_amount is not None
+        and result.target_amount > 0
+        and result.current_done >= result.target_amount
+    )
+    if payload.terminated and is_completed:
+        raise HTTPException(status_code=400, detail="Completed run cannot be terminated")
+
+    result.terminated = payload.terminated
+    db.commit()
+    db.refresh(result)
+    logger.info(
+        "Test result %s set terminated=%s by %s",
+        result.id,
+        payload.terminated,
+        current_user.username,
+    )
+    return TestResultResponse.model_validate(result)
